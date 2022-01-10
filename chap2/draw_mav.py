@@ -95,22 +95,22 @@ class DrawMav:
         #                    [1, 1, 1],  # point 2 [1]
         #                    [1, 1, 0],  # point 3 [2]
         #                    ]).T
-        points = np.array([[0, 0, 0],  # point 1 [0]
-                           [-(fuse_l1 - fuse_l2), 0.5 * fuse_w, -0.5 * fuse_h],  # point 2 [1]
-                           [-(fuse_l1 - fuse_l2), -0.5 * fuse_w, -0.5 * fuse_h],  # point 3 [2]
-                           [-(fuse_l1 - fuse_l2), -0.5 * fuse_w, 0.5 * fuse_h],  # point 4 [3]
-                           [-(fuse_l1 - fuse_l2), 0.5 * fuse_w, 0.5 * fuse_h],  # point 5 [4]
-                           [-(fuse_l1 + fuse_l3),0,0],  # point 6 [5]
-                           [-fuse_l1, 0.5*wing_w, 0],  # point 7 [6]
-                           [-(fuse_l1 + wing_l), 0.5 * wing_w, 0],  # point 8 [7]
-                           [-(fuse_l1 + wing_l), -0.5 * wing_w, 0],  # point 9 [8]
-                           [-fuse_l1, -0.5*wing_w, 0],  # point 10 [9]
-                           [-(fuse_l1 + fuse_l3 - tail_l), 0.5 * tail_w, 0],  # point 11 [10]
-                           [-(fuse_l1 + fuse_l3), 0.5 * tail_w, 0],  # point 12 [11]
-                           [-(fuse_l1 + fuse_l3), -0.5 * tail_w, 0],  # point 13 [12]
-                           [-(fuse_l1 + fuse_l3 - tail_l), -0.5 * tail_w, 0],  # point 14 [13]
-                           [-(fuse_l1 + fuse_l3 - tail_l), 0, 0],  # point 15 [14]
-                           [-(fuse_l1 + fuse_l3), 0, -tail_h],  # point 16 [15]
+        points = np.array([[fuse_l1, 0, 0],  # point 1 [0]
+                           [fuse_l1 - fuse_l2, 0.5 * fuse_w, -0.5 * fuse_h],  # point 2 [1]
+                           [(fuse_l1 - fuse_l2), -0.5 * fuse_w, -0.5 * fuse_h],  # point 3 [2]
+                           [(fuse_l1 - fuse_l2), -0.5 * fuse_w, 0.5 * fuse_h],  # point 4 [3]
+                           [(fuse_l1 - fuse_l2), 0.5 * fuse_w, 0.5 * fuse_h],  # point 5 [4]
+                           [-fuse_l3,0,0],  # point 6 [5]
+                           [0, 0.5*wing_w, 0],  # point 7 [6]
+                           [-wing_l, 0.5 * wing_w, 0],  # point 8 [7]
+                           [-wing_l, -0.5 * wing_w, 0],  # point 9 [8]
+                           [0, -0.5*wing_w, 0],  # point 10 [9]
+                           [-(fuse_l3 - tail_l), 0.5 * tail_w, 0],  # point 11 [10]
+                           [-fuse_l3, 0.5 * tail_w, 0],  # point 12 [11]
+                           [-fuse_l3, -0.5 * tail_w, 0],  # point 13 [12]
+                           [-(fuse_l3 - tail_l), -0.5 * tail_w, 0],  # point 14 [13]
+                           [-(fuse_l3 - tail_l), 0, 0],  # point 15 [14]
+                           [-fuse_l3, 0, -tail_h],  # point 16 [15]
                            ]).T
         
 
@@ -124,7 +124,19 @@ class DrawMav:
         blue = np.array([0., 0., 1., 1])
         yellow = np.array([1., 1., 0., 1])
         meshColors = np.empty((13, 3, 4), dtype=np.float32)
-        meshColors[0] = yellow
+        meshColors[0] = yellow # front
+        meshColors[1] = yellow # front
+        meshColors[2] = yellow # front
+        meshColors[3] = yellow # front
+        meshColors[4] = blue # body
+        meshColors[5] = blue # body
+        meshColors[6] = red # body
+        meshColors[7] = blue # body
+        meshColors[8] = green # wing
+        meshColors[9] = green # wing
+        meshColors[10] = green # tail
+        meshColors[11] = green # tail
+        meshColors[12] = red  # tail
 
         return points, meshColors
 
