@@ -6,7 +6,7 @@ mavsimPy
         1/14/2019 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
@@ -37,7 +37,7 @@ sim_time = SIM.start_time
 print("Press Command-Q to exit...")
 while sim_time < SIM.end_time:
     # -------vary forces and moments to check dynamics-------------
-    fx = 10
+    fx = 0  # 10
     fy = 0  # 10
     fz = 0  # 10
     Mx = 0  # 0.1

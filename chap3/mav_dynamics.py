@@ -60,7 +60,6 @@ class MavDynamics:
         # normalize the quaternion
         e0 = self._state.item(6)
         e1 = self._state.item(7)
-
         e2 = self._state.item(8)
         e3 = self._state.item(9)
         normE = np.sqrt(e0**2+e1**2+e2**2+e3**2)
@@ -100,27 +99,45 @@ class MavDynamics:
         m = forces_moments.item(4)
         n = forces_moments.item(5)
 
+
+        phi, theta, psi = Quaternion2Euler(np.array([[e0],[e1],[e2],[e3]]))
+        cphi = np.cos(phi)
+        ctheta = np.cos(theta)
+        cpsi = np.cos(psi)
+        sphi = np.sin(phi)
+        stheta = np.sin(theta)
+        spsi = np.sin(psi)
         # position kinematics
-        pos_dot = 
-        north_dot = 
-        east_dot = 
-        down_dot = 
+        # pos_dot =
+        north_dot = u * ctheta * cpsi + v * (sphi * stheta * cpsi - cphi * spsi) + w * (cphi * stheta * cpsi + sphi * spsi)
+        east_dot = u * ctheta * spsi + v * (sphi * stheta * spsi + cphi * cpsi) + w * (cphi * stheta * spsi - sphi * cpsi)
+        down_dot = - u * stheta + v * sphi * ctheta + w * cphi * ctheta
 
         # position dynamics
-        u_dot = 
-        v_dot = 
-        w_dot = 
+        u_dot = r*v - q*w + fx/MAV.mass
+        v_dot = p*w - r*u + fy/MAV.mass
+        w_dot = q*u - p*v + fz/MAV.mass
 
         # rotational kinematics
-        e0_dot = 
-        e1_dot = 
-        e2_dot = 
-        e3_dot = 
+        e0_dot = 0.5 * (-e1*p - e2*q - e3*r)
+        e1_dot = 0.5 * (e0*p - e3*q + e2*r)
+        e2_dot = 0.5 * (e3*p + e0*q - e1*r)
+        e3_dot = 0.5 * (e1*q - e2*p + e0*r)
 
+
+        Jy = MAV.Jy
+        Gamma1 = MAV.gamma1
+        Gamma2 = MAV.gamma2
+        Gamma3 = MAV.gamma3
+        Gamma4 = MAV.gamma4
+        Gamma5 = MAV.gamma5
+        Gamma6 = MAV.gamma6
+        Gamma7 = MAV.gamma7
+        Gamma8 = MAV.gamma8
         # rotatonal dynamics
-        p_dot = 
-        q_dot = 
-        r_dot = 
+        p_dot = Gamma1 * p * q - Gamma2 * q * r + Gamma3 * l + Gamma4 * n
+        q_dot = Gamma5 * p * r - Gamma6 * (p **2 - r **2) + m / Jy
+        r_dot = Gamma7 * p * q - Gamma1 * q * r + Gamma4 * l + Gamma8 * n
 
         # collect the derivative of the states
         x_dot = np.array([[north_dot, east_dot, down_dot, u_dot, v_dot, w_dot,
