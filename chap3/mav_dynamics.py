@@ -156,3 +156,6 @@ class MavDynamics:
         self.true_state.p = self._state.item(10)
         self.true_state.q = self._state.item(11)
         self.true_state.r = self._state.item(12)
+        self.true_state.Va = np.sqrt(self._state.item(3)**2 + self._state.item(4)**2 + self._state.item(5)**2)
+        self.true_state.Vg = np.sqrt(self._state.item(3)**2 + self._state.item(4)**2 + self._state.item(5)**2)
+        

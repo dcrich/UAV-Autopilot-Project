@@ -1,8 +1,11 @@
 """
 various tools to be used in mavPySim
 """
+from cmath import nan
+import math
 import numpy as np
 import scipy.linalg as linalg
+import math
 
 def Quaternion2Euler(quaternion):
     """
@@ -15,7 +18,12 @@ def Quaternion2Euler(quaternion):
     e2 = quaternion.item(2)
     e3 = quaternion.item(3)
     phi = np.arctan2(2.0 * (e0 * e1 + e2 * e3), e0**2.0 + e3**2.0 - e1**2.0 - e2**2.0)
-    theta = np.arcsin(2.0 * (e0 * e2 - e1 * e3))
+    tempvar = 2.0 * (e0 * e2 - e1 * e3)
+    if tempvar > 1:
+        tempvar = 1
+    elif tempvar < -1:
+        tempvar = -1
+    theta = np.arcsin(tempvar)
     psi = np.arctan2(2.0 * (e0 * e3 + e1 * e2), e0**2.0 + e1**2.0 - e2**2.0 - e3**2.0)
 
     return phi, theta, psi

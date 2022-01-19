@@ -33,18 +33,18 @@ sim_time = SIM.start_time
 # main simulation loop
 while sim_time < SIM.end_time * 0.1:
     # -------vary states to check viewer-------------
-    if sim_time < SIM.end_time/60:
-        state.north += 10*SIM.ts_simulation
-    elif sim_time < 2*SIM.end_time/60:
-        state.east += 10*SIM.ts_simulation
-    elif sim_time < 3*SIM.end_time/60:
-        state.altitude += 10*SIM.ts_simulation
-    elif sim_time < 4*SIM.end_time/60:
-        state.psi += 0.1*SIM.ts_simulation
-    elif sim_time < 5*SIM.end_time/60:
-        state.theta += 0.1*SIM.ts_simulation
-    else:
-        state.phi += 0.1*SIM.ts_simulation
+    # if sim_time < SIM.end_time/60:
+    #     state.north += 10*SIM.ts_simulation
+    # elif sim_time < 2*SIM.end_time/60:
+    #     state.east += 10*SIM.ts_simulation
+    # elif sim_time < 3*SIM.end_time/60:
+    #     state.altitude += 10*SIM.ts_simulation
+    # elif sim_time < 4*SIM.end_time/60:
+    #     state.psi += 0.1*SIM.ts_simulation
+    # elif sim_time < 5*SIM.end_time/60:
+    #     state.theta += 0.1*SIM.ts_simulation
+    # else:
+    #     state.phi += 0.1*SIM.ts_simulation
 
     # -------update viewer and video-------------
     mav_view.update(state)
