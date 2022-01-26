@@ -9,6 +9,7 @@ part of mavPySim
         12/20/2018 - RWB
 """
 import sys
+# from typing_extensions import Self
 sys.path.append('..')
 import numpy as np
 
@@ -120,27 +121,43 @@ class MavDynamics:
         m = forces_moments.item(4)
         n = forces_moments.item(5)
 
+        phi, theta, psi = Quaternion2Euler(np.array([[e0],[e1],[e2],[e3]]))
+        cphi = np.cos(phi)
+        ctheta = np.cos(theta)
+        cpsi = np.cos(psi)
+        sphi = np.sin(phi)
+        stheta = np.sin(theta)
+        spsi = np.sin(psi)
         # position kinematics
-        pos_dot = 
-        north_dot = 
-        east_dot = 
-        down_dot = 
+        # pos_dot =
+        north_dot = u * ctheta * cpsi + v * (sphi * stheta * cpsi - cphi * spsi) + w * (cphi * stheta * cpsi + sphi * spsi)
+        east_dot = u * ctheta * spsi + v * (sphi * stheta * spsi + cphi * cpsi) + w * (cphi * stheta * spsi - sphi * cpsi)
+        down_dot = - u * stheta + v * sphi * ctheta + w * cphi * ctheta
 
         # position dynamics
-        u_dot = 
-        v_dot = 
-        w_dot = 
+        u_dot = r*v - q*w + fx/MAV.mass
+        v_dot = p*w - r*u + fy/MAV.mass
+        w_dot = q*u - p*v + fz/MAV.mass
 
         # rotational kinematics
-        e0_dot = 
-        e1_dot = 
-        e2_dot = 
-        e3_dot = 
+        e0_dot = 0.5 * (-e1*p - e2*q - e3*r)
+        e1_dot = 0.5 * (e0*p - e3*q + e2*r)
+        e2_dot = 0.5 * (e3*p + e0*q - e1*r)
+        e3_dot = 0.5 * (e1*q - e2*p + e0*r)
 
-        # rotational dynamics
-        p_dot = 
-        q_dot = 
-        r_dot = 
+        Jy = MAV.Jy
+        Gamma1 = MAV.gamma1
+        Gamma2 = MAV.gamma2
+        Gamma3 = MAV.gamma3
+        Gamma4 = MAV.gamma4
+        Gamma5 = MAV.gamma5
+        Gamma6 = MAV.gamma6
+        Gamma7 = MAV.gamma7
+        Gamma8 = MAV.gamma8
+        # rotatonal dynamics
+        p_dot = Gamma1 * p * q - Gamma2 * q * r + Gamma3 * l + Gamma4 * n
+        q_dot = Gamma5 * p * r - Gamma6 * (p **2 - r **2) + m / Jy
+        r_dot = Gamma7 * p * q - Gamma1 * q * r + Gamma4 * l + Gamma8 * n
 
         # collect the derivative of the states
         x_dot = np.array([[north_dot, east_dot, down_dot, u_dot, v_dot, w_dot,
@@ -150,25 +167,43 @@ class MavDynamics:
     def _update_velocity_data(self, wind=np.zeros((6,1))):
         steady_state = wind[0:3]
         gust = wind[3:6]
+
+        e0 = self._state.item(6)
+        e1 = self._state.item(7)
+        e2 = self._state.item(8)
+        e3 = self._state.item(9)
+        phi, theta, psi = Quaternion2Euler(np.array([[e0],[e1],[e2],[e3]]))
+        cphi = np.cos(phi)
+        ctheta = np.cos(theta)
+        cpsi = np.cos(psi)
+        sphi = np.sin(phi)
+        stheta = np.sin(theta)
+        spsi = np.sin(psi)
+        rotationVehicleToBody = np.array([[ctheta*cpsi, ctheta*spsi, -stheta],
+                                 [sphi*stheta*cpsi-cphi*spsi, sphi*stheta*spsi+cphi*cpsi, sphi*ctheta],
+                                 [cphi*stheta*cpsi + sphi*spsi, cphi*stheta*spsi-sphi*cpsi, cphi*ctheta]])
         # convert wind vector from world to body frame and add gust
-        wind_body_frame =
+        wind_body_frame = rotationVehicleToBody @ steady_state + gust
         # velocity vector relative to the airmass
-        v_air = 
-        ur = 
-        vr = 
-        wr = 
+        # v_air = 
+        u = self._state[3]
+        v = self._state[4]
+        w = self._state[5]
+        ur = u - wind_body_frame[0] #self._Va * np.cos(self._alpha) * np.cos(self._beta)
+        vr = v - wind_body_frame[1] #self._Va * np.sin(self._beta)
+        wr = w - wind_body_frame[2] #self._Va * np.sin(self._alpha) * np.cos(self._beta)
         # compute airspeed
-        self._Va = 
+        self._Va = np.sqrt(ur**2 + vr**2 + wr**2)
         # compute angle of attack
         if ur == 0:
-            self._alpha = 
+            self._alpha = np.pi/2.0
         else:
-            self._alpha = 
+            self._alpha = np.arctan(wr/ur)
         # compute sideslip angle
         if self._Va == 0:
-            self._beta = 
+            self._beta = 0
         else:
-            self._beta = 
+            self._beta = np.arcsin(vr / self._Va)
 
     def _forces_moments(self, delta):
         """
@@ -177,52 +212,88 @@ class MavDynamics:
         :return: Forces and Moments on the UAV np.matrix(Fx, Fy, Fz, Ml, Mn, Mm)
         """
         phi, theta, psi = Quaternion2Euler(self._state[6:10])
+        e_0 = self._state.item(6)
+        e_x = self._state.item(7)
+        e_y = self._state.item(8)
+        e_z = self._state.item(9)
         p = self._state.item(10)
         q = self._state.item(11)
         r = self._state.item(12)
+        delta_a = delta.aileron
+        delta_e = delta.elevator
+        delta_r = delta.rudder
+        delta_t = delta.throttle
 
         # compute gravitaional forces
-        f_g = 
+        f_g = np.array([MAV.mass * MAV.gravity * 2 * (e_x * e_z - e_y * e_0),
+                        MAV.mass * MAV.gravity * 2 * (e_y * e_z + e_x * e_0),
+                        MAV.mass * MAV.gravity * (e_z**2 + e_0**2 - e_x**2 - e_y**2)])
+        # f_g = np.array([- MAV.mass * MAV.gravity * np.sin(theta),
+        #                 MAV.mass * MAV.gravity * np.cos(theta)*np.sin(phi),
+        #                 MAV.mass * MAV.gravity * np.cos(theta)*np.cos(phi)])
 
         # compute Lift and Drag coefficients
-        CL =
-        CD =
+        M_transRate = MAV.M
+        alpha_0 = MAV.alpha0
+        sigmaOfAlpha = (1 + np.exp(-M_transRate * (self._alpha - alpha_0)) + np.exp(M_transRate * (self._alpha + alpha_0))) /       \
+                       ((1 + np.exp(-M_transRate * (self._alpha - alpha_0))) * (1 + np.exp(M_transRate * (self._alpha + alpha_0))))
+        CL = (1 - sigmaOfAlpha) * (MAV.C_L_0 + MAV.C_L_alpha * self._alpha) + sigmaOfAlpha * (2 * np.sign(self._alpha) * np.sin(self._alpha)**2 * np.cos(self._alpha))
+        CD = MAV.C_D_p + (MAV.C_L_0 + MAV.C_L_alpha * self._alpha)**2 / (np.pi * MAV.e * MAV.AR)
         # compute Lift and Drag Forces
-        F_lift = 
-        F_drag = 
+        F_lift = 0.5 * MAV.rho * self._Va **2 * MAV.S_wing * (CL + MAV.C_L_q * 0.5 * MAV.c / self._Va * q + MAV.C_L_delta_e * delta_e)
+        F_drag = 0.5 * MAV.rho * self._Va **2 * MAV.S_wing * (CD + MAV.C_D_q * 0.5 * MAV.c / self._Va * q + MAV.C_D_delta_e * delta_e)
 
         #compute propeller thrust and torque
-        thrust_prop, torque_prop = #self._motor_thrust_torque()
+        T_p, Q_p = self._motor_thrust_torque(delta_t)
 
         # compute longitudinal forces in body frame
-        fx = 
-        fz = 
-
-        # compute lateral forces in body frame
-        fy = 
+        fx = f_g[0] + (- np.cos(self._alpha) * F_drag + np.sin(self._alpha) * F_lift) + (T_p) # seems right
+        fz = f_g[2] + (- np.sin(self._alpha) * F_drag - np.cos(self._alpha) * F_lift) # provides answer that is close
 
         # compute logitudinal torque in body frame
-        My = 
+        m = 0.5 * MAV.rho * self._Va **2 * MAV.S_wing * MAV.c *                                                      \
+            (MAV.C_m_0 + MAV.C_m_alpha * self._alpha +                                                               \
+             MAV.C_m_q * 0.5 * MAV.c / self._Va * q + MAV.C_m_delta_e * delta_e) # seems right
+        
+        # compute lateral forces in body frame
+        fy = 0.5 * MAV.rho * self._Va **2 * MAV.S_wing *                                                             \
+            (MAV.C_Y_0 + MAV.C_Y_beta * self._beta + MAV.C_Y_p * 0.5 * MAV.b / self._Va * p +                        \
+             MAV.C_Y_r * 0.5 * MAV.b / self._Va * r + MAV.C_Y_delta_a * delta_a + MAV.C_Y_delta_r * delta_r)
+
         # compute lateral torques in body frame
-        Mx = 
-        Mz = 
+        l = 0.5 * MAV.rho * self._Va **2 * MAV.S_wing * MAV.b *                                                      \
+            (MAV.C_ell_0 + MAV.C_ell_beta * self._beta + MAV.C_ell_p * 0.5 * MAV.b / self._Va * p +                  \
+             MAV.C_ell_r * 0.5 * MAV.b / self._Va * r + MAV.C_ell_delta_a * delta_a + MAV.C_ell_delta_r * delta_r) - \
+            Q_p
+        n = 0.5 * MAV.rho * self._Va **2 * MAV.S_wing * MAV.b *                                                      \
+            (MAV.C_n_0 + MAV.C_n_beta * self._beta + MAV.C_n_p * 0.5 * MAV.b / self._Va * p +                        \
+             MAV.C_n_r * 0.5 * MAV.b / self._Va * r + MAV.C_n_delta_a * delta_a + MAV.C_n_delta_r * delta_r)
 
         self._forces[0] = fx
         self._forces[1] = fy
         self._forces[2] = fz
-        return np.array([[fx, fy, fz, Mx, My, Mz]]).T
+        print(np.array([[fx, fy, fz, l, m, n]]).T)
+        return np.array([[fx, fy, fz, l, m, n]]).T
 
-    def _motor_thrust_torque(self, Va, delta_t):
-        # compute thrust and torque due to propeller  (See addendum by McLain)
-        # map delta_t throttle command(0 to 1) into motor input voltage
-        V_in = 
+    def _motor_thrust_torque(self, delta_t):
+        # compute thrust and torque due to propeller (See addendum by McLain) # map delta t throttle command(0 to 1) into motor input voltage
+        V_in = MAV.V_max * delta_t
+        # Quadratic formula to solve for motor speed
+        a = MAV.C_Q0 * MAV.rho * np.power(MAV.D_prop, 5) / ((2.0 * np.pi)**2)
+        b = MAV.C_Q1 * MAV.rho * np.power(MAV.D_prop, 4) * self._Va / (2.0 * np.pi) + MAV.KQ **2 / MAV.R_motor
+        c = MAV.C_Q2 * MAV.rho * np.power(MAV.D_prop, 3) * self._Va**2 - MAV.KQ / MAV.R_motor * V_in + MAV.KQ * MAV.i0
+        # Consider only positive root
+        Omega_p = (-b + np.sqrt(b**2 - 4 * a * c)) / (2.0 * a) 
+        J_op = 2 * np.pi * self._Va / (Omega_p * MAV.D_prop)
+        # compute non-dimensionalized coefficients of thrust and torque
+        C_T = MAV.C_T2 * J_op**2 + MAV.C_T1 * J_op + MAV.C_T0 #
+        C_Q = MAV.C_Q2 * J_op**2 + MAV.C_Q1 * J_op + MAV.C_Q0 #
 
-        # Angular speed of propeller
-        Omega_p = 
-
-        # thrust and torque due to propeller
-        thrust_prop = 
-        torque_prop =  
+        # add thrust and torque due to propeller
+        n = Omega_p / (2 * np.pi)
+        thrust_prop = MAV.rho * n**2 * np.power(MAV.D_prop, 4) * C_T
+        torque_prop = MAV.rho * n**2 * np.power(MAV.D_prop, 5) * C_Q # SHOULD THIS BE NEGATIVE???????
+        
         return thrust_prop, torque_prop
 
     def _update_true_state(self):

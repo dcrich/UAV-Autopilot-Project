@@ -93,6 +93,9 @@ class StatePlot():
             self.plot.setData(x_data, y_data, pen=None, symbol=self.symbol,
                                symbolSize=self.symbol_size, symbolPen=self.color, pxMode=self.px_mode)
         else:
+            y_data = np.asarray(y_data)
+            y_data = y_data.flatten()
+            y_data = list(y_data)
             self.plot.setData(x_data, y_data, pen=self.color)
             # Plot marker
             if self.marker is not None and len(x_data) > 0 and len(y_data) > 0:

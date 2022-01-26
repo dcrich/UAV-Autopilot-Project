@@ -5,8 +5,9 @@ mavsimPy
         12/27/2018 - RWB
         1/17/2019 - RWB
 """
+
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
@@ -22,7 +23,7 @@ mav_view = MavViewer()  # initialize the mav viewer
 data_view = DataViewer()  # initialize view of data plots
 if VIDEO is True:
     from chap2.video_writer import VideoWriter
-    video = VideoWriter(video_name="chap4_video.avi",
+    video = VideoWriter(video_name="chap4_video.mp4",
                         bounding_box=(0, 0, 1000, 1000),
                         output_rate=SIM.ts_video)
 
@@ -39,16 +40,20 @@ plot_time = sim_time
 print("Press Command-Q to exit...")
 while sim_time < SIM.end_time:
     # -------set control surfaces-------------
-    delta.elevator = -0.2
-    delta.aileron = 0.0
-    delta.rudder = 0.005
-    delta.throttle = 0.5
+    # delta.elevator = -0.1248 # starts to turn at 30s ## -0.2 #
+    # delta.aileron = -0.01836 ## 0.0 #
+    # delta.rudder =  -0.0003026 ## 0.005 #
+    # delta.throttle = 0.6768 ## 0.5 #
+    delta.elevator = -0.1# -0.1248
+    delta.aileron = 0.# 0.001836
+    delta.rudder = 0.# -0.0003026
+    delta.throttle = 0.# 0.6768
     # transpose to make it a column vector
 
     # -------physical system-------------
     current_wind = wind.update()  # get the new wind vector
     mav.update(delta, current_wind)  # propagate the MAV dynamics
-
+    
     # -------update viewer-------------
     if sim_time-plot_time > SIM.ts_plotting:
         mav_view.update(mav.true_state)  # plot body of MAV
@@ -70,3 +75,6 @@ if VIDEO is True:
 
 
 
+# LEFT OFF:
+# My values are close to beards but not the same, may just be due to the randomness of the wind since they are the same the first step
+# figure out if the motions make sense
