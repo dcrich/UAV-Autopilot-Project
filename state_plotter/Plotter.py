@@ -45,7 +45,7 @@ class Plotter:
         self.axis_pen = pg.mkPen(color='w', width=1)
 
         # initialize Qt gui application and window
-        self.default_window_size = (1000, 800)
+        self.default_window_size = (800, 1000)
         self.app = pg.QtGui.QApplication([])
         self.window = pg.GraphicsWindow(title=window_title)
         self.window.resize(*self.default_window_size)

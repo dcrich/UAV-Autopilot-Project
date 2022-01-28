@@ -272,7 +272,7 @@ class MavDynamics:
         self._forces[0] = fx
         self._forces[1] = fy
         self._forces[2] = fz
-        print(np.array([[fx, fy, fz, l, m, n]]).T)
+        # print(np.array([[fx, fy, fz, l, m, n]]).T)
         return np.array([[fx, fy, fz, l, m, n]]).T
 
     def _motor_thrust_torque(self, delta_t):
