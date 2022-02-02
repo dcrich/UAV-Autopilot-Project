@@ -5,7 +5,7 @@ mavsim_python
         2/2/2019 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
@@ -38,7 +38,7 @@ trim_state, trim_input = compute_trim(mav, Va, gamma)
 mav._state = trim_state  # set the initial state of the mav to the trim state
 delta = trim_input  # set input to constant constant trim input
 
-# # compute the state space model linearized about trim
+# compute the state space model linearized about trim
 compute_model(mav, trim_state, trim_input)
 
 # this signal will be used to excite modes
@@ -57,8 +57,8 @@ while sim_time < SIM.end_time:
     #current_wind = wind.update()  # get the new wind vector
     current_wind = np.zeros((6, 1))
     # this input excites the phugoid mode by adding an impulse at t=5.0
-    # delta.elevator += input_signal.impulse(sim_time)
-    # delta.rudder += input_signal.doublet(sim_time)
+    delta.elevator += input_signal.impulse(sim_time)
+    delta.rudder += input_signal.doublet(sim_time)
     mav.update(delta, current_wind)  # propagate the MAV dynamics
 
     # -------update viewer-------------
