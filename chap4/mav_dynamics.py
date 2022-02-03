@@ -247,6 +247,13 @@ class MavDynamics:
         T_p, Q_p = self._motor_thrust_torque(delta_t)
 
         # compute longitudinal forces in body frame
+        # CX = -CD *np.cos(self._alpha) + CL*np.sin(self._alpha)
+        # CXq = -MAV.C_D_q * np.cos(self._alpha) + MAV.C_L_q *np.sin(self._alpha)
+        # CXdeltae = -MAV.C_D_delta_e * np.cos(self._alpha) + MAV.C_L_delta_e *np.sin(self._alpha)
+        # fxlong = -MAV.mass * MAV.gravity * np.sin(theta) + \
+        #         T_p + \
+        #         0.5 * MAV.rho * self._Va**2 * MAV.S_wing * (CX + CXq * MAV.c * q * 0.5 /self._Va) + \
+        #         0.5 * MAV.rho * self._Va**2 * MAV.S_wing * (CXdeltae * delta_e)
         fx = f_g[0] + (- np.cos(self._alpha) * F_drag + np.sin(self._alpha) * F_lift) + (T_p) # seems right
         fz = f_g[2] + (- np.sin(self._alpha) * F_drag - np.cos(self._alpha) * F_lift) # provides answer that is close
 
@@ -279,9 +286,9 @@ class MavDynamics:
         # compute thrust and torque due to propeller (See addendum by McLain) # map delta t throttle command(0 to 1) into motor input voltage
         V_in = MAV.V_max * delta_t
         # Quadratic formula to solve for motor speed
-        a = MAV.C_Q0 * MAV.rho * np.power(MAV.D_prop, 5) / ((2.0 * np.pi)**2)
-        b = MAV.C_Q1 * MAV.rho * np.power(MAV.D_prop, 4) * self._Va / (2.0 * np.pi) + MAV.KQ **2 / MAV.R_motor
-        c = MAV.C_Q2 * MAV.rho * np.power(MAV.D_prop, 3) * self._Va**2 - MAV.KQ / MAV.R_motor * V_in + MAV.KQ * MAV.i0
+        a = MAV.C_Q0 * MAV.rho * MAV.D_prop**5 / (4.0 * np.pi**2)
+        b = (MAV.C_Q1 * MAV.rho * MAV.D_prop**4 * self._Va / (2.0 * np.pi)) + (MAV.KQ **2 / MAV.R_motor)
+        c = (MAV.C_Q2 * MAV.rho * MAV.D_prop**3 * self._Va**2) - (MAV.KQ * V_in / MAV.R_motor) + (MAV.KQ * MAV.i0)
         # Consider only positive root
         Omega_p = (-b + np.sqrt(b**2 - 4 * a * c)) / (2.0 * a) 
         J_op = 2 * np.pi * self._Va / (Omega_p * MAV.D_prop)
@@ -290,9 +297,9 @@ class MavDynamics:
         C_Q = MAV.C_Q2 * J_op**2 + MAV.C_Q1 * J_op + MAV.C_Q0 #
 
         # add thrust and torque due to propeller
-        n = Omega_p / (2 * np.pi)
-        thrust_prop = MAV.rho * n**2 * np.power(MAV.D_prop, 4) * C_T
-        torque_prop = MAV.rho * n**2 * np.power(MAV.D_prop, 5) * C_Q # SHOULD THIS BE NEGATIVE???????
+        tempvar = Omega_p**2 / (4 * np.pi**2)
+        thrust_prop = MAV.rho * tempvar * MAV.D_prop**4 * C_T
+        torque_prop = MAV.rho * tempvar * MAV.D_prop**5 * C_Q 
         
         return thrust_prop, torque_prop
 

@@ -8,7 +8,9 @@ compute_ss_model
 import sys
 sys.path.append('..')
 import numpy as np
+from datetime import datetime
 from scipy.optimize import minimize
+from numpy import linalg as LA
 from tools.rotations import Euler2Quaternion, Quaternion2Euler
 import parameters.aerosonde_parameters as MAV
 from parameters.simulation_parameters import ts_simulation as Ts
@@ -16,9 +18,11 @@ from message_types.msg_delta import MsgDelta
 
 
 def compute_model(mav, trim_state, trim_input):
-    A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input)
+    trim_input_copy1 = MsgDelta(elevator=trim_input.elevator, aileron=trim_input.aileron, rudder=trim_input.rudder, throttle=trim_input.throttle) 
+    trim_input_copy2 = MsgDelta(elevator=trim_input.elevator, aileron=trim_input.aileron, rudder=trim_input.rudder, throttle=trim_input.throttle) 
+    A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input_copy1)
     Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, \
-    a_V1, a_V2, a_V3 = compute_tf_model(mav, trim_state, trim_input)
+    a_V1, a_V2, a_V3 = compute_tf_model(mav, trim_state, trim_input_copy2)
 
     # write transfer function gains to file
     file = open('chap5/model_coef.py', 'w')
@@ -82,6 +86,14 @@ def compute_model(mav, trim_state, trim_input):
      B_lat[3][0], B_lat[3][1],
      B_lat[4][0], B_lat[4][1],))
     file.write('Ts = %f\n' % Ts)
+    dtstr = datetime.now().strftime("%Y-%m-%d_%I-%M-%S-%p")
+    file.write('# '+dtstr)
+
+    eigval_lon, eigvec_lon = LA.eig(A_lon)
+    print(eigval_lon)
+    eigval_lat, eigvec_lat = LA.eig(A_lat)
+    print(eigval_lat)
+
     file.close()
 
 
@@ -93,21 +105,21 @@ def compute_tf_model(mav, trim_state, trim_input):
     alpha_trim = mav._alpha
     phi, theta_trim, psi = Quaternion2Euler(trim_state[6:10])
     delta_e= trim_input.elevator
-    delta_a = trim_input.aileron
-    delta_r = trim_input.rudder
     delta_t = trim_input.throttle
 
     # define transfer function constants
     a_phi1 = -0.5 * MAV.rho * Va_trim**2 * MAV.S_wing * MAV.b**2 * MAV.C_p_p * 0.5 / Va_trim
     a_phi2 = 0.5 * MAV.rho * Va_trim**2 * MAV.S_wing * MAV.b * MAV.C_p_delta_a
-    a_theta1 = MAV.rho * Va_trim**2 * MAV.S_wing * MAV.C_m_q * MAV.c**2 * 0.25 / (MAV.Jy * Va_trim)
-    a_theta2 = MAV.rho * Va_trim**2 * MAV.c * MAV.S_wing * MAV.C_m_alpha * 0.5 / (MAV.Jy)
+    a_theta1 = -MAV.rho * Va_trim**2 * MAV.S_wing * MAV.C_m_q * MAV.c**2 * 0.25 / (MAV.Jy * Va_trim)
+    a_theta2 = -MAV.rho * Va_trim**2 * MAV.c * MAV.S_wing * MAV.C_m_alpha * 0.5 / (MAV.Jy)
     a_theta3 = MAV.rho * Va_trim**2 * MAV.c * MAV.S_wing * MAV.C_m_delta_e * 0.5 / (MAV.Jy)
 
     # Compute transfer function coefficients using new propulsion model
     diffTp_wrt_Va = dT_dVa(mav, Va_trim, delta_t)
     diffTp_wrt_delta_t = dT_ddelta_t(mav, Va_trim, delta_t)
-    a_V1 = MAV.rho * Va_trim * MAV.S_wing * (MAV.C_D_0 + MAV.C_D_alpha * alpha_trim + MAV.C_D_delta_e * delta_e) / MAV.mass - diffTp_wrt_Va / MAV.mass
+    a_V1 = (MAV.rho * Va_trim * MAV.S_wing *                                                 \
+            (MAV.C_D_0 + MAV.C_D_alpha * alpha_trim + MAV.C_D_delta_e * delta_e)             \
+             - diffTp_wrt_Va) / MAV.mass
     a_V2 = diffTp_wrt_delta_t / MAV.mass
     a_V3 = MAV.gravity * np.cos(theta_trim - alpha_trim)
 
@@ -119,14 +131,23 @@ def compute_ss_model(mav, trim_state, trim_input):
     A = df_dx(mav, x_euler, trim_input)
     B = df_du(mav, x_euler, trim_input)
     # extract longitudinal states (u, w, q, theta, pd) and change pd to h
-    E_1 = np.zeros((5,12),dtype=float)
-    np.put(E_1, [3,17,34,43,50], [1.,1.,1.,1.,-1.])
+    E_1 = np.array([[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0,-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
     E_2 = np.array([[0,1,0,0],[1,0,0,0]],dtype=float)
-    A_lon = E_1 @ A @ E_1.T
+    E_1T = E_1.T
+    print(E_1T)
+    tempvar = E_1 @ A
+    A_lon = tempvar @ E_1T
     B_lon = E_1 @ B @ E_2.T
     # extract lateral states (v, p, r, phi, psi)
-    E_3 = np.zeros((5,12),dtype=float)
-    np.put(E_3, [4,21,35,42,56], [1.,1.,1.,1.,1.])
+    E_3 = np.array([[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
     E_4 = np.array([[0,0,1,0],[0,0,0,1]],dtype=float)
     A_lat = E_3 @ A @ E_3.T
     B_lat = E_3 @ B @ E_4.T
@@ -150,17 +171,39 @@ def f_euler(mav, x_euler, delta):
     # return 12x1 dynamics (as if state were Euler state)
     # compute f at euler_state
     x_quat = quaternion_state(x_euler)
+    e0 = x_quat.item(6)
+    e1 = x_quat.item(7)
+    e2 = x_quat.item(8)
+    e3 = x_quat.item(9)
+    normE = np.sqrt(e0**2+e1**2+e2**2+e3**2)
+    x_quat[6][0] = x_quat.item(6)/normE
+    x_quat[7][0] = x_quat.item(7)/normE
+    x_quat[8][0] = x_quat.item(8)/normE
+    x_quat[9][0] = x_quat.item(9)/normE
     mav._state = x_quat
-    mav.update(delta,np.zeros((6,1)))
+    forces_moments = mav._forces_moments(delta)
+    x_dot = mav._derivatives(x_quat, forces_moments)
 
     dTHETA_dq = np.zeros((3,4))
     phi, theta, psi = Quaternion2Euler(x_quat)
-    eps = 0.0001
+    eps = 0.001
     for i in range(4):
         x_quat_eps = np.copy(x_quat)
-        x_quat_eps[i][0] += eps
+        x_quat_eps[6+i][0] += eps
+        e0 = x_quat_eps.item(6)
+        e1 = x_quat_eps.item(7)
+        e2 = x_quat_eps.item(8)
+        e3 = x_quat_eps.item(9)
+        normE = np.sqrt(e0**2+e1**2+e2**2+e3**2)
+        x_quat_eps[6][0] = x_quat_eps.item(6)/normE
+        x_quat_eps[7][0] = x_quat_eps.item(7)/normE
+        x_quat_eps[8][0] = x_quat_eps.item(8)/normE
+        x_quat_eps[9][0] = x_quat_eps.item(9)/normE
         phi_eps, theta_eps, psi_eps = Quaternion2Euler(x_quat_eps)
-        d_euler = np.array([[phi-phi_eps],[theta-theta_eps],[psi-psi_eps]])
+        dphi = minimizedAngle(phi-phi_eps)
+        dtheta = minimizedAngle(theta-theta_eps)
+        dpsi = minimizedAngle(psi-psi_eps)
+        d_euler = np.array([[dphi],[dtheta],[dpsi]])
         df_dq = (d_euler) / eps
         dTHETA_dq[:,i] = df_dq[:,0]
     dTe_dxq = np.zeros((12,13))
@@ -169,9 +212,16 @@ def f_euler(mav, x_euler, delta):
     dTe_dxq[6:9,6:10] = dTHETA_dq
     dTe_dxq[9:12,10:13] = np.eye(3)
 
-    f_euler_ = dTe_dxq @ mav._state
+    f_euler_ = dTe_dxq @ x_dot
 
     return f_euler_
+
+def minimizedAngle(angle):
+  angle %= 2*np.pi
+  angle += 3*np.pi
+  angle %= 2*np.pi
+  angle -= np.pi
+  return angle
 
 def df_dx(mav, x_euler, delta):
     # take partial of f_euler with respect to x_euler
@@ -179,11 +229,14 @@ def df_dx(mav, x_euler, delta):
     m = 12
     n = 12
     A = np.zeros((m,n))
-    f_at_x = f_euler(mav, x_euler, delta)
+    deltacopy = MsgDelta(elevator=delta.elevator, aileron=delta.aileron, rudder=delta.rudder, throttle=delta.throttle) 
+    f_at_x = f_euler(mav, x_euler, deltacopy)
     for i in range(n):
         x_eps = np.copy(x_euler)
         x_eps[i][0] += eps
-        f_at_x_eps = f_euler(mav, x_eps, delta)
+
+        deltacopy = MsgDelta(elevator=delta.elevator, aileron=delta.aileron, rudder=delta.rudder, throttle=delta.throttle) 
+        f_at_x_eps = f_euler(mav, x_eps, deltacopy)
         df_dxi = (f_at_x_eps - f_at_x) / eps
         A[:,i] = df_dxi[:,0]
     return A
@@ -191,13 +244,14 @@ def df_dx(mav, x_euler, delta):
 
 def df_du(mav, x_euler, delta):
     # take partial of f_euler with respect to input
-    eps = 0.00001
+    eps = 0.001
     m = 12
     n = 4
     B = np.zeros((m,n))
-    f_at_u = f_euler(mav, x_euler, delta)
+    deltacopy = MsgDelta(elevator=delta.elevator, aileron=delta.aileron, rudder=delta.rudder, throttle=delta.throttle) 
+    f_at_u = f_euler(mav, x_euler, deltacopy)
     for i in range(n):
-        u_eps = delta
+        u_eps = MsgDelta(elevator=delta.elevator, aileron=delta.aileron, rudder=delta.rudder, throttle=delta.throttle) 
         if i == 0:
             u_eps.aileron += eps
         elif i == 1:
@@ -215,7 +269,7 @@ def df_du(mav, x_euler, delta):
 
 def dT_dVa(mav, Va, delta_t):
     # returns the derivative of motor thrust with respect to Va
-    eps = 0.0001
+    eps = 0.001
     mav._Va = Va + eps
     T_eps, Q_eps = mav._motor_thrust_torque(delta_t)
     mav._Va = Va 
@@ -225,7 +279,7 @@ def dT_dVa(mav, Va, delta_t):
 def dT_ddelta_t(mav, Va, delta_t):
     # returns the derivative of motor thrust with respect to delta_t
     mav._Va = Va
-    eps = 0.0001
+    eps = 0.001
     T_eps, Q_eps = mav._motor_thrust_torque(delta_t+eps)
     T, Q = mav._motor_thrust_torque(delta_t)
     return (T_eps - T) / eps

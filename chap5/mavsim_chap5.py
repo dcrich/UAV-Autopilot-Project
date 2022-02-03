@@ -57,8 +57,8 @@ while sim_time < SIM.end_time:
     #current_wind = wind.update()  # get the new wind vector
     current_wind = np.zeros((6, 1))
     # this input excites the phugoid mode by adding an impulse at t=5.0
-    delta.elevator += input_signal.impulse(sim_time)
-    delta.rudder += input_signal.doublet(sim_time)
+    # delta.elevator += input_signal.impulse(sim_time)
+    # delta.rudder += input_signal.doublet(sim_time)
     mav.update(delta, current_wind)  # propagate the MAV dynamics
 
     # -------update viewer-------------
@@ -80,3 +80,5 @@ if VIDEO is True:
 
 
 
+# something is wrong with how the state space models are getting created, don't match the values initially in the file
+# Questions: What is the input signal doing? What should the MAV be doing?
