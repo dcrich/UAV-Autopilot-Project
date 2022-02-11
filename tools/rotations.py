@@ -20,9 +20,9 @@ def Quaternion2Euler(quaternion):
     phi = np.arctan2(2.0 * (e0 * e1 + e2 * e3), e0**2.0 + e3**2.0 - e1**2.0 - e2**2.0)
     tempvar = 2.0 * (e0 * e2 - e1 * e3)
     if tempvar > 1:
-        tempvar = 1
+        tempvar = 1.
     elif tempvar < -1:
-        tempvar = -1
+        tempvar = -1.
     theta = np.arcsin(tempvar)
     psi = np.arctan2(2.0 * (e0 * e3 + e1 * e2), e0**2.0 + e1**2.0 - e2**2.0 - e3**2.0)
 

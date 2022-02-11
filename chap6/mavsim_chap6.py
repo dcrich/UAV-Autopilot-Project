@@ -6,7 +6,7 @@ mavsim_python
         2/24/2020 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
@@ -40,26 +40,125 @@ Va_command = Signals(dc_offset=25.0,
                      amplitude=3.0,
                      start_time=2.0,
                      frequency=0.01)
-altitude_command = Signals(dc_offset=100.0,
-                           amplitude=10.0,
+altitude_command = Signals(dc_offset=50.0,
+                           amplitude=20.0,
                            start_time=0.0,
                            frequency=0.02)
 course_command = Signals(dc_offset=np.radians(180),
-                         amplitude=np.radians(45),
-                         start_time=5.0,
-                         frequency=0.015)
+                         amplitude=np.radians(15),
+                         start_time=20.0,
+                         frequency=0.07)
+
+roll_command = Signals(dc_offset=np.radians(0),
+                         amplitude=np.radians(15),
+                         start_time=3.0,
+                         frequency=0.1)
 
 # initialize the simulation time
 sim_time = SIM.start_time
-
+commands.airspeed_command = 25.#Va_command.square(sim_time)
+commands.course_command = 0.0#course_command.square(sim_time)
+commands.altitude_command = 1.0
 # main simulation loop
 print("Press Command-Q to exit...")
 while sim_time < SIM.end_time:
-
     # -------autopilot commands-------------
-    commands.airspeed_command = Va_command.square(sim_time)
-    commands.course_command = course_command.square(sim_time)
-    commands.altitude_command = altitude_command.square(sim_time)
+    
+    if sim_time > 5 and sim_time <25:
+        commands.airspeed_command = 30.0
+        commands.course_command = 0.0
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 25 and sim_time < 50:
+        commands.airspeed_command = 25.0
+        commands.course_command = np.pi - .001
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 50 and sim_time < 55:
+        commands.airspeed_command = 25.0
+        commands.course_command = np.pi - np.pi/4.0
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 55 and sim_time < 60:
+        commands.airspeed_command = 25.0
+        commands.course_command = np.pi/4.0 - np.pi
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 60 and sim_time < 70:
+        commands.airspeed_command = 25.0
+        commands.course_command = np.pi - np.pi/4.0
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 70 and sim_time < 80:
+        commands.airspeed_command = 25.0
+        commands.course_command =  np.pi/4.0 - np.pi
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 80 and sim_time < 90:
+        commands.airspeed_command = 25.0
+        commands.course_command = np.pi
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 90 and sim_time < 110:
+        commands.airspeed_command = 30.0
+        commands.course_command = 2.0*np.pi
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 110 and sim_time < 125:
+        commands.airspeed_command = 40.0
+        commands.course_command = 0.0
+        commands.altitude_command = 50.0
+   
+    elif sim_time > 125 and sim_time < 140:
+        commands.airspeed_command = 20.0
+        commands.course_command = 0.0
+        commands.altitude_command = 150.0
+    
+    elif sim_time > 140 and sim_time < 150:
+        commands.airspeed_command = 30.0
+        commands.course_command = 0.0
+        commands.altitude_command = 100.0
+    
+    elif sim_time > 150 :
+        commands.airspeed_command = 25.0
+        commands.course_command = 0.0
+        commands.altitude_command = 10.0
+
+    # if sim_time > 5 and sim_time <25:
+    #     commands.airspeed_command = 30.0
+    #     commands.course_command = 0.0
+    #     commands.altitude_command = 100.0
+    
+    # elif sim_time > 25 and sim_time < 50:
+    #     commands.airspeed_command = 30.0
+    #     commands.course_command = np.pi - .001
+    #     commands.altitude_command = 100.0
+    
+    # elif sim_time > 50 and sim_time < 75:
+    #     commands.airspeed_command = 35.0
+    #     commands.course_command = 2.*np.pi
+    #     commands.altitude_command = 200.0
+    
+    # elif sim_time > 75 and sim_time < 85:
+    #     commands.airspeed_command = 25.0
+    #     commands.course_command = np.pi/4.0
+    #     commands.altitude_command = 200.0
+    # elif sim_time > 85 and sim_time < 95:
+    #     commands.airspeed_command = 25.0
+    #     commands.course_command = -np.pi/4.0
+    #     commands.altitude_command = 200.0
+    # elif sim_time > 95:
+    #     commands.airspeed_command = 30.0
+    #     commands.course_command = 0.0
+    #     commands.altitude_command = 100.0
+    
+    # commands.phi_feedforward = 0.0#roll_command.square(sim_time)
+    # if sim_time > 1:
+    #     commands.phi_feedforward = 0.1
+    # if sim_time > 3:
+    #     commands.phi_feedforward = -0.1
+    # if sim_time > 5:
+    #     commands.phi_feedforward = 0.0
 
     # -------autopilot-------------
     estimated_state = mav.true_state  # uses true states in the control

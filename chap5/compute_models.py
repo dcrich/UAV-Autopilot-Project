@@ -90,9 +90,9 @@ def compute_model(mav, trim_state, trim_input):
     file.write('# '+dtstr)
 
     eigval_lon, eigvec_lon = LA.eig(A_lon)
-    print(eigval_lon)
+    # print(eigval_lon)
     eigval_lat, eigvec_lat = LA.eig(A_lat)
-    print(eigval_lat)
+    # print(eigval_lat)
 
     file.close()
 
@@ -104,7 +104,7 @@ def compute_tf_model(mav, trim_state, trim_input):
     Va_trim = mav._Va
     alpha_trim = mav._alpha
     phi, theta_trim, psi = Quaternion2Euler(trim_state[6:10])
-    delta_e= trim_input.elevator
+    delta_e = trim_input.elevator
     delta_t = trim_input.throttle
 
     # define transfer function constants
@@ -138,7 +138,6 @@ def compute_ss_model(mav, trim_state, trim_input):
                     [0.0, 0.0,-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
     E_2 = np.array([[0,1,0,0],[1,0,0,0]],dtype=float)
     E_1T = E_1.T
-    print(E_1T)
     tempvar = E_1 @ A
     A_lon = tempvar @ E_1T
     B_lon = E_1 @ B @ E_2.T
@@ -181,8 +180,11 @@ def f_euler(mav, x_euler, delta):
     x_quat[8][0] = x_quat.item(8)/normE
     x_quat[9][0] = x_quat.item(9)/normE
     mav._state = x_quat
+    mav._Va = np.sqrt(x_quat[3]**2+x_quat[4]**2+x_quat[5]**2)
     forces_moments = mav._forces_moments(delta)
     x_dot = mav._derivatives(x_quat, forces_moments)
+    mav._update_velocity_data()
+    # print(x_dot)
 
     dTHETA_dq = np.zeros((3,4))
     phi, theta, psi = Quaternion2Euler(x_quat)
@@ -217,10 +219,10 @@ def f_euler(mav, x_euler, delta):
     return f_euler_
 
 def minimizedAngle(angle):
-  angle %= 2*np.pi
-  angle += 3*np.pi
-  angle %= 2*np.pi
-  angle -= np.pi
+#   angle %= 2*np.pi
+#   angle += 3*np.pi
+#   angle %= 2*np.pi
+#   angle -= np.pi
   return angle
 
 def df_dx(mav, x_euler, delta):
@@ -252,13 +254,13 @@ def df_du(mav, x_euler, delta):
     f_at_u = f_euler(mav, x_euler, deltacopy)
     for i in range(n):
         u_eps = MsgDelta(elevator=delta.elevator, aileron=delta.aileron, rudder=delta.rudder, throttle=delta.throttle) 
-        if i == 0:
+        if i == 2:
             u_eps.aileron += eps
         elif i == 1:
             u_eps.elevator += eps
-        elif i == 2:
-            u_eps.rudder += eps
         elif i == 3:
+            u_eps.rudder += eps
+        elif i == 0:
             u_eps.throttle += eps
         f_at_u_eps = f_euler(mav, x_euler, u_eps)
         df_dui = (f_at_u_eps - f_at_u) / eps

@@ -113,7 +113,7 @@ class Signals:
 
 if __name__ == "__main__":
     # instantiate the system
-    input = signals(amplitude=2.0, frequency=2.0)
+    input = Signals(amplitude=2.0, frequency=2.0)
     Ts = 0.01
 
     # main simulation loop
