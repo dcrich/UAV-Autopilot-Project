@@ -13,7 +13,7 @@ class WindSimulation:
     def __init__(self, Ts):
         # steady state wind defined in the inertial frame
         self._steady_state = np.array([[0., 0., 0.]]).T
-        #self._steady_state = np.array([[0., 5., 0.]]).T
+        # self._steady_state = np.array([[0., 5., 0.]]).T
 
         #   Dryden gust model parameters (section 4.4 UAV book)
         Va = 1 # must set Va to a constant value
