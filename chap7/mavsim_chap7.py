@@ -5,7 +5,7 @@ mavsim_python
         2/18/2020 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
