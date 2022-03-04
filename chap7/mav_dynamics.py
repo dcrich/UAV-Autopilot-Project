@@ -116,13 +116,13 @@ class MavDynamics:
         phi, theta, psi = Quaternion2Euler(np.array([[e0],[e1],[e2],[e3]]))
         
         # simulate rate gyros(units are rad / sec) --------- SLIDE 14
-        self._sensors.gyro_x = p + SENSOR.gyro_x_bias + np.random.normal(0.0,SENSOR.gyro_sigma,1)
-        self._sensors.gyro_y = q + SENSOR.gyro_y_bias + np.random.normal(0.0,SENSOR.gyro_sigma,1)
-        self._sensors.gyro_z = r + SENSOR.gyro_z_bias + np.random.normal(0.0,SENSOR.gyro_sigma,1)
+        self._sensors.gyro_x = p + SENSOR.gyro_x_bias + np.random.normal(0.0,SENSOR.gyro_sigma)
+        self._sensors.gyro_y = q + SENSOR.gyro_y_bias + np.random.normal(0.0,SENSOR.gyro_sigma)
+        self._sensors.gyro_z = r + SENSOR.gyro_z_bias + np.random.normal(0.0,SENSOR.gyro_sigma)
         # simulate accelerometers(units of g) --------- SLIDE 11
-        self._sensors.accel_x = self._forces[0] / MAV.mass + MAV.gravity * np.sin(theta) + np.random.normal(0.0,SENSOR.accel_sigma,1)
-        self._sensors.accel_y = self._forces[1] / MAV.mass - MAV.gravity * np.cos(theta) * np.sin(phi) + np.random.normal(0.0,SENSOR.accel_sigma,1)
-        self._sensors.accel_z = self._forces[2] / MAV.mass - MAV.gravity * np.cos(theta) * np.cos(phi) + np.random.normal(0.0,SENSOR.accel_sigma,1)
+        self._sensors.accel_x = self._forces[0,0] / MAV.mass + MAV.gravity * np.sin(theta) + np.random.normal(0.0,SENSOR.accel_sigma)
+        self._sensors.accel_y = self._forces[1,0] / MAV.mass - MAV.gravity * np.cos(theta) * np.sin(phi) + np.random.normal(0.0,SENSOR.accel_sigma)
+        self._sensors.accel_z = self._forces[2,0] / MAV.mass - MAV.gravity * np.cos(theta) * np.cos(phi) + np.random.normal(0.0,SENSOR.accel_sigma)
         
         # simulate magnetometers
         # magnetic field in provo has magnetic declination of 12.5 degrees
@@ -144,7 +144,8 @@ class MavDynamics:
         Bias_ap = 0.0
         Bias_dp = 0.0
         self._sensors.abs_pressure = MAV.rho * MAV.gravity * altitudeAtGroundLevel + Bias_ap + np.random.normal(0.0,SENSOR.abs_pres_sigma)
-        self._sensors.diff_pressure = 0.5 * MAV.rho * self._Va**2 + Bias_dp + np.random.normal(0.0,SENSOR.diff_pres_sigma)
+        Va = self._Va.flatten()
+        self._sensors.diff_pressure = 0.5 * MAV.rho * Va[0]**2 + Bias_dp + np.random.normal(0.0,SENSOR.diff_pres_sigma)
         
         # simulate GPS sensor
         if self._t_gps >= SENSOR.ts_gps:
@@ -154,8 +155,8 @@ class MavDynamics:
             self._sensors.gps_n = north + self._gps_eta_n
             self._sensors.gps_e = east + self._gps_eta_e
             self._sensors.gps_h = - down + self._gps_eta_h
-            northcomp = self._Va * np.cos(psi) + self._wind[0]
-            eastcomp = self._Va * np.sin(psi) + self._wind[1]
+            northcomp = Va[0] * np.cos(psi) + self._wind[0,0]
+            eastcomp = Va[0] * np.sin(psi) + self._wind[1,0]
             self._sensors.gps_Vg = np.sqrt(northcomp**2 + eastcomp**2) + np.random.normal(0.0,SENSOR.gps_Vg_sigma)
             self._sensors.gps_course = np.arctan2(eastcomp, northcomp) + np.random.normal(0.0,SENSOR.gps_course_sigma)
             self._t_gps = 0.
@@ -262,9 +263,9 @@ class MavDynamics:
         u = self._state[3]
         v = self._state[4]
         w = self._state[5]
-        ur = u - wind_body_frame[0] #self._Va * np.cos(self._alpha) * np.cos(self._beta)
-        vr = v - wind_body_frame[1] #self._Va * np.sin(self._beta)
-        wr = w - wind_body_frame[2] #self._Va * np.sin(self._alpha) * np.cos(self._beta)
+        ur = u - wind_body_frame[0,0] #self._Va * np.cos(self._alpha) * np.cos(self._beta)
+        vr = v - wind_body_frame[1,0] #self._Va * np.sin(self._beta)
+        wr = w - wind_body_frame[2,0] #self._Va * np.sin(self._alpha) * np.cos(self._beta)
         # compute airspeed
         self._Va = np.sqrt(ur**2 + vr**2 + wr**2)
         # compute angle of attack
