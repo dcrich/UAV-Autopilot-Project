@@ -76,10 +76,11 @@ class AlphaFilter:
 class EkfAttitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q = 1.0 * np.eye(2)#tune                                                               # ???????????????????????????????????????????????????????? where to start
-        self.Q_gyro = SENSOR.gyro_sigma**2 * np.eye(4)#     4x4 sigma squared gyro sensor                            # ???????????????????????????????????????????????????????? where to start
+        self.Q = np.array([[2.1, 
+                            1.1]]).T #tune                                                              
+        self.Q_gyro = SENSOR.gyro_sigma**2 * np.eye(4)
         self.R_accel = np.array([[SENSOR.accel_sigma**2,0,0],[0, SENSOR.accel_sigma**2, 0],[0, 0, SENSOR.accel_sigma**2]])
-        self.N = 4.0  # number of prediction step per sample # ???????????????????????????????????????????????????????? how to decide
+        self.N = 4.0  # number of prediction step per sample 
         self.xhat =  np.array([[CTRL.MAV.phi0],[CTRL.MAV.phi0]])# initial state: phi, theta
         self.P = np.eye(2)
         self.Ts = SIM.ts_control                    
@@ -91,7 +92,7 @@ class EkfAttitude:
         state.phi = self.xhat.item(0)
         state.theta = self.xhat.item(1)
 
-    def f(self, x, measurement, state):                    # ???????????????????????????????????????????????????????? x? measurement?
+    def f(self, x, measurement, state):                    
         # system dynamics for propagation model: xdot = f(x, u)
         p = measurement.gyro_x
         q = measurement.gyro_y
@@ -153,13 +154,16 @@ class EkfPosition:
     # implement continous-discrete EKF to estimate pn, pe, Vg, chi, wn, we, psi
     def __init__(self):
         self.Q = 1.0 * np.eye(7)
-        self.R_gps = np.zeros((5,5))
-        self.R_gps[0,0] = SENSOR.gps_n_sigma
-        self.R_gps[1,1] = SENSOR.gps_e_sigma
-        self.R_gps[2,2] = SENSOR.gps_Vg_sigma
-        self.R_gps[3,3] = SENSOR.gps_course_sigma
-        self.R_pseudo = np.eye(2)
-        self.N = 7.0  # number of prediction step per sample
+        self.Q[6,6] = 0.1
+        self.R_gps = np.zeros((6,6))
+        self.R_gps[0,0] = SENSOR.gps_n_sigma**2
+        self.R_gps[1,1] = SENSOR.gps_e_sigma**2
+        self.R_gps[2,2] = SENSOR.gps_Vg_sigma**2
+        self.R_gps[3,3] = SENSOR.gps_course_sigma**2
+        self.R_gps[4,4] = 1.0
+        self.R_gps[5,5] = 1.0
+        self.R_pseudo = np.eye(2,dtype=float)
+        self.N = 4.0  # number of prediction step per sample
         self.Ts = SIM.ts_control
         self.xhat = np.array([[CTRL.MAV.north0],
                               [CTRL.MAV.east0],
@@ -174,6 +178,7 @@ class EkfPosition:
         self.gps_Vg_old = 9999
         self.gps_course_old = 9999
         self.pseudo_threshold = stats.chi2.isf(0.9,7)
+
         self.gps_threshold = 100000 # don't gate GPS
 
     def update(self, measurement, state):
@@ -258,12 +263,12 @@ class EkfPosition:
         # always update based on wind triangle pseudu measurement
         h = self.h_pseudo(self.xhat, measurement, state)
         C = jacobian(self.h_pseudo, self.xhat, measurement, state)
-        y = np.array([[0, 0]]).T
+        y = np.array([[0.0, 0.0]]).T
         S_inv = np.linalg.inv(self.R_pseudo + C @ self.P @ C.T)
         if (y-h).T @ S_inv @ (y-h) < self.pseudo_threshold:
             L = self.P @ C.T @ S_inv
             tempvar = np.eye(7) - L @ C
-            self.P = tempvar @ self.P @ tempvar.T + L @ self.R_gps @ L.T
+            self.P = tempvar @ self.P @ tempvar.T + L @ self.R_pseudo @ L.T
             self.xhat = self.xhat + L @ (y-h)
 
         # only update GPS when one of the signals changes
@@ -278,12 +283,14 @@ class EkfPosition:
             y = np.array([[measurement.gps_n,
                            measurement.gps_e,
                            measurement.gps_Vg,
-                           y_chi]]).T
+                           y_chi,
+                           0.0,
+                           0.0]]).T
             S_inv = np.linalg.inv(self.R_gps + C @ self.P @ C.T)
             if (y-h).T @ S_inv @ (y-h) < self.gps_threshold:
                 L = self.P @ C.T @ S_inv 
-                tempvar = np.eye(2) - L @ C
-                self.P = tempvar @ self.P @ tempvar.T + L @ self.R_accel @ L.T
+                tempvar = np.eye(7) - L @ C
+                self.P = tempvar @ self.P @ tempvar.T + L @ self.R_gps @ L.T
                 self.xhat = self.xhat + L @ (y-h)
 
             # update stored GPS signals
