@@ -125,14 +125,26 @@ while sim_time < SIM.end_time:
     #     commands.altitude_command = 10.0
 
     # # TEST FLIGHT 2
-    if sim_time > 5 and sim_time <25: # check climb
+    if sim_time > 5 and sim_time <15: # check climb
+        commands.airspeed_command = 20.0
+        commands.course_command = 0.0
+        commands.altitude_command = 10.0
+    elif sim_time > 15 and sim_time < 20: # check course
+        commands.airspeed_command = 20.0
+        commands.course_command = 0.0
+        commands.altitude_command = 10.0
+    elif sim_time > 20 and sim_time < 25: # check course
+        commands.airspeed_command = 35.0
+        commands.course_command = 0.0
+        commands.altitude_command = 10.0
+    elif sim_time > 25 and sim_time < 30: # check course
         commands.airspeed_command = 25.0
         commands.course_command = 0.0
-        commands.altitude_command = 100.0
-    elif sim_time > 25 and sim_time < 50: # check course
-        commands.airspeed_command = 25.0
-        commands.course_command = np.pi - .001
-        commands.altitude_command = 100.0
+        commands.altitude_command = 10.0
+    elif sim_time > 30 and sim_time < 50: # check course
+        commands.airspeed_command = 35.0
+        commands.course_command = 0.0
+        commands.altitude_command = 10.0
     elif sim_time > 50 and sim_time < 60: # check speed
         commands.airspeed_command = 35.0
         commands.course_command = np.pi

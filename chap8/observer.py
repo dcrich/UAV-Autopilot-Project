@@ -21,9 +21,9 @@ class Observer:
         self.estimated_state = initial_state
         # use alpha filters to low pass filter gyros and accels
         # alpha = Ts/(Ts + tau) where tau is the LPF time constant
-        self.lpf_gyro_x = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_x)
-        self.lpf_gyro_y = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_y)
-        self.lpf_gyro_z = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_z)
+        self.lpf_gyro_x = AlphaFilter(alpha=0.9, y0=initial_measurements.gyro_x)
+        self.lpf_gyro_y = AlphaFilter(alpha=0.9, y0=initial_measurements.gyro_y)
+        self.lpf_gyro_z = AlphaFilter(alpha=0.9, y0=initial_measurements.gyro_z)
         self.lpf_accel_x = AlphaFilter(alpha=0.7, y0=initial_measurements.accel_x)
         self.lpf_accel_y = AlphaFilter(alpha=0.7, y0=initial_measurements.accel_y)
         self.lpf_accel_z = AlphaFilter(alpha=0.7, y0=initial_measurements.accel_z)
@@ -76,15 +76,16 @@ class AlphaFilter:
 class EkfAttitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q = np.array([[2.1, 
-                            1.1]]).T #tune                                                              
+        self.Q = np.array([[2.0, 
+                            1.1]]).T #tune    
+        self.Q = 1.9 * self.Q                                                                    
         self.Q_gyro = SENSOR.gyro_sigma**2 * np.eye(4)
         self.R_accel = np.array([[SENSOR.accel_sigma**2,0,0],[0, SENSOR.accel_sigma**2, 0],[0, 0, SENSOR.accel_sigma**2]])
         self.N = 4.0  # number of prediction step per sample 
         self.xhat =  np.array([[CTRL.MAV.phi0],[CTRL.MAV.phi0]])# initial state: phi, theta
         self.P = np.eye(2)
         self.Ts = SIM.ts_control                    
-        self.gate_threshold = stats.chi2.isf(0.9,2)
+        self.gate_threshold = stats.chi2.isf(0.7,2)
 
     def update(self, measurement, state):
         self.propagate_model(measurement, state)
@@ -154,14 +155,16 @@ class EkfPosition:
     # implement continous-discrete EKF to estimate pn, pe, Vg, chi, wn, we, psi
     def __init__(self):
         self.Q = 1.0 * np.eye(7)
-        self.Q[6,6] = 0.1
-        self.R_gps = np.zeros((6,6))
+        self.Q[2,2] = 1. #Vg
+        self.Q[3,3] = 1.5 #chi
+        self.Q[6,6] = 1.5 #psi
+        self.Q[4,4] = 1.5 #wn
+        self.Q[5,5] = 1.5 #we
+        self.R_gps = np.eye(6,dtype=float)
         self.R_gps[0,0] = SENSOR.gps_n_sigma**2
         self.R_gps[1,1] = SENSOR.gps_e_sigma**2
         self.R_gps[2,2] = SENSOR.gps_Vg_sigma**2
         self.R_gps[3,3] = SENSOR.gps_course_sigma**2
-        self.R_gps[4,4] = 1.0
-        self.R_gps[5,5] = 1.0
         self.R_pseudo = np.eye(2,dtype=float)
         self.N = 4.0  # number of prediction step per sample
         self.Ts = SIM.ts_control

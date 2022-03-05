@@ -44,16 +44,16 @@ observer = Observer(SIM.ts_simulation, initial_state,initial_measurements)
 from message_types.msg_autopilot import MsgAutopilot
 commands = MsgAutopilot()
 Va_command = Signals(dc_offset=25.0,
-                     amplitude=1.0,
+                     amplitude=5.0,
                      start_time=2.0,
                      frequency = 0.00001)
-h_command = Signals(dc_offset=10.0,
+h_command = Signals(dc_offset=0.0,
                     amplitude=10.0,
-                    start_time=0.0,
+                    start_time=2.0,
                     frequency=.000002)
 chi_command = Signals(dc_offset=np.radians(0),
-                      amplitude=np.radians(30),
-                      start_time=5.0,
+                      amplitude=np.radians(20),
+                      start_time=0.0,
                       frequency=0.05)
 
 # initialize the simulation time
