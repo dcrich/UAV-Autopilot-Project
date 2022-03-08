@@ -258,6 +258,7 @@ class MavDynamics:
                                  [cphi*stheta*cpsi + sphi*spsi, cphi*stheta*spsi-sphi*cpsi, cphi*ctheta]])
         # convert wind vector from world to body frame and add gust
         wind_body_frame = rotationVehicleToBody @ steady_state + gust
+        self._wind = wind_body_frame.copy()
         # velocity vector relative to the airmass
         # v_air = 
         u = self._state[3]
