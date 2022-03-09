@@ -78,7 +78,7 @@ class EkfAttitude:
     def __init__(self):
         self.Q = np.array([[1., 
                             1.]]).T #tune    
-        self.Q = 1. * self.Q                                                                    
+        self.Q = 10**-6 * self.Q                                                                    
         self.Q_gyro = SENSOR.gyro_sigma**2 * np.eye(4)
         self.R_accel = SENSOR.accel_sigma**2 * np.eye(3)
         self.N = 4.0  # number of prediction step per sample 
@@ -143,7 +143,7 @@ class EkfAttitude:
         C = jacobian(self.h, self.xhat, measurement, state)
         y = np.array([[measurement.accel_x, measurement.accel_y, measurement.accel_z]]).T
         S_inv = np.linalg.inv(self.R_accel + C @ self.P @ C.T)
-        if (y-h).T @ S_inv @ (y-h) < self.gate_threshold:
+        if True:#(y-h).T @ S_inv @ (y-h) < self.gate_threshold:
             L = self.P @ C.T @ S_inv
             tempvar = np.eye(2) - L @ C
             self.P = tempvar @ self.P @ tempvar.T + L @ self.R_accel @ L.T
@@ -154,12 +154,12 @@ class EkfAttitude:
 class EkfPosition:
     # implement continous-discrete EKF to estimate pn, pe, Vg, chi, wn, we, psi
     def __init__(self):
-        self.Q = 1. * np.eye(7)
-        self.Q[2,2] = 1.1 #Vg
-        self.Q[3,3] = .1 #chi
-        self.Q[6,6] = 1.1 #psi
-        self.Q[4,4] = 1.1 #wn
-        self.Q[5,5] = 1.1 #we
+        self.Q = 1 * np.eye(7)
+        self.Q[2,2] = 10**1 #Vg
+        self.Q[3,3] = 10**-6 #chi
+        self.Q[4,4] = 10**-6 #wn
+        self.Q[5,5] = 10**-6 #we
+        self.Q[6,6] = 10**-6 #psi
         self.R_gps = np.eye(4,dtype=float)
         self.R_gps[0,0] = SENSOR.gps_n_sigma**2
         self.R_gps[1,1] = SENSOR.gps_e_sigma**2
@@ -180,7 +180,7 @@ class EkfPosition:
         self.gps_e_old = 9999
         self.gps_Vg_old = 9999
         self.gps_course_old = 9999
-        self.pseudo_threshold = stats.chi2.isf(0.2,df=2)
+        self.pseudo_threshold = stats.chi2.isf(0.5,df=2)
 
         self.gps_threshold = 100000 # don't gate GPS
 
