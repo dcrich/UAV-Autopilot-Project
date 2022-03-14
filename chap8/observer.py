@@ -154,19 +154,19 @@ class EkfAttitude:
 class EkfPosition:
     # implement continous-discrete EKF to estimate pn, pe, Vg, chi, wn, we, psi
     def __init__(self):
-        self.Q = 1 * np.eye(7)
-        self.Q[2,2] = 10**1 #Vg
-        self.Q[3,3] = 10**-6 #chi
-        self.Q[4,4] = 10**-6 #wn
-        self.Q[5,5] = 10**-6 #we
-        self.Q[6,6] = 10**-6 #psi
+        self.Q = 10**0 * np.eye(7)
+        self.Q[2,2] = 10.0**0 #Vg
+        self.Q[3,3] = 10**-4 #chi
+        self.Q[4,4] = 10**-3 #wn
+        self.Q[5,5] = 10**-3 #we
+        self.Q[6,6] = 10**-4 #psi
         self.R_gps = np.eye(4,dtype=float)
         self.R_gps[0,0] = SENSOR.gps_n_sigma**2
         self.R_gps[1,1] = SENSOR.gps_e_sigma**2
         self.R_gps[2,2] = SENSOR.gps_Vg_sigma**2
         self.R_gps[3,3] = SENSOR.gps_course_sigma**2
         self.R_pseudo = np.eye(2,dtype=float)
-        self.N = 4.0  # number of prediction step per sample
+        self.N = 2.0  # number of prediction step per sample
         self.Ts = SIM.ts_control 
         self.xhat = np.array([[CTRL.MAV.north0],
                               [CTRL.MAV.east0],
@@ -261,6 +261,8 @@ class EkfPosition:
             A_d = I + A * T_p + A @ A.T * T_p**2
             # update P with discrete time model
             self.P = A_d @ self.P @ A_d.T + T_p**2 * self.Q
+            if np.max(self.P)>10**5:
+                stophere = 1
 
     def measurement_update(self, measurement, state):
         # always update based on wind triangle pseudu measurement

@@ -6,7 +6,7 @@ mavsim_python
         2/27/2020 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import copy
 import parameters.simulation_parameters as SIM
@@ -43,11 +43,11 @@ path = MsgPath()
 #path.type = 'line'
 path.type = 'orbit'
 if path.type == 'line':
-    path.line_origin = np.array([[0.0, 0.0, -100.0]]).T
-    path.line_direction = np.array([[0.5, 1.0, 0.0]]).T
+    path.line_origin = np.array([[0.0, 0.0, -50.0]]).T
+    path.line_direction = np.array([[10., 100.0, 0.0]]).T
     path.line_direction = path.line_direction / np.linalg.norm(path.line_direction)
 elif path.type == 'orbit':
-    path.orbit_center = np.array([[0.0, 0.0, -100.0]]).T  # center of the orbit
+    path.orbit_center = np.array([[0.0, 0.0, 0.0]]).T  # center of the orbit
     path.orbit_radius = 300.0  # radius of the orbit
     path.orbit_direction = 'CW'  # orbit direction: 'CW'==clockwise, 'CCW'==counter clockwise
 
