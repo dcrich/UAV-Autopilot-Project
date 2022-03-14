@@ -82,14 +82,15 @@ class PathFollower:
         varphi = wrap(np.arctan2(p_e - c_e, p_n - c_n), state.chi)
         chi_o = varphi + direction * np.pi / 2.0
         # compute normalized orbit error
-        orbit_error = - state.Vg * (d-rho) * np.sin(np.arctan(self.k_orbit * (d-rho)/rho))
+        orbit_error = np.abs((d-rho) / rho)
         # course command
-        self.autopilot_commands.course_command = chi_o + direction * np.arctan(self.k_orbit * (d - rho) / rho)
+        chi_d = chi_o + direction * np.arctan(self.k_orbit * (d - rho) / rho)
+        self.autopilot_commands.course_command = chi_d
         # altitude command
         self.autopilot_commands.altitude_command = h_c
         # roll feedforward command
-        if orbit_error < 10:
-            self.autopilot_commands.phi_feedforward = direction * np.arctan(state.Vg**2 / (self.gravity * rho * np.cos(state.chi - state.psi)))
+        if orbit_error < 0.05: #d-rho > -15 or d-rho < 15:#
+            self.autopilot_commands.phi_feedforward = direction * np.arctan(state.Va**2 / (self.gravity * rho))#direction * np.arctan(state.Vg**2 / (self.gravity * rho * np.cos(state.chi - state.psi)))
         else:
             self.autopilot_commands.phi_feedforward = 0.0
 

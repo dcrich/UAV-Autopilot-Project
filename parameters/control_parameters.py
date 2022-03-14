@@ -11,14 +11,14 @@ Va0 = TF.Va_trim
 
 #----------roll loop-------------
 # get transfer function data for delta_a to phi
-wn_roll = 20 #7
-zeta_roll = 1.807
+wn_roll = 15 #7
+zeta_roll = 1.507
 roll_kp = wn_roll**2/TF.a_phi2
 roll_kd = (2.0 * zeta_roll * wn_roll - TF.a_phi1) / TF.a_phi2
 
 #----------course loop-------------
-wn_course = wn_roll / 15.0
-zeta_course = 1.1
+wn_course = wn_roll / 35.0
+zeta_course = .701
 course_kp = 2 * zeta_course * wn_course * Va0 / gravity
 course_ki = wn_course**2 * Va0 / gravity
 

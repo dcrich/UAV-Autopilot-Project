@@ -154,12 +154,12 @@ class EkfAttitude:
 class EkfPosition:
     # implement continous-discrete EKF to estimate pn, pe, Vg, chi, wn, we, psi
     def __init__(self):
-        self.Q = 10**0 * np.eye(7)
+        self.Q = 10**-2 * np.eye(7)
         self.Q[2,2] = 10.0**0 #Vg
-        self.Q[3,3] = 10**-4 #chi
-        self.Q[4,4] = 10**-3 #wn
-        self.Q[5,5] = 10**-3 #we
-        self.Q[6,6] = 10**-4 #psi
+        self.Q[3,3] = 10**-3 #chi
+        self.Q[4,4] = 10**-1 #wn
+        self.Q[5,5] = 10**-1 #we
+        self.Q[6,6] = 10**-6 #psi
         self.R_gps = np.eye(4,dtype=float)
         self.R_gps[0,0] = SENSOR.gps_n_sigma**2
         self.R_gps[1,1] = SENSOR.gps_e_sigma**2
@@ -261,8 +261,7 @@ class EkfPosition:
             A_d = I + A * T_p + A @ A.T * T_p**2
             # update P with discrete time model
             self.P = A_d @ self.P @ A_d.T + T_p**2 * self.Q
-            if np.max(self.P)>10**5:
-                stophere = 1
+            
 
     def measurement_update(self, measurement, state):
         # always update based on wind triangle pseudu measurement
@@ -270,7 +269,7 @@ class EkfPosition:
         C = jacobian(self.h_pseudo, self.xhat, measurement, state)
         y = np.array([[0.0, 0.0]]).T #np.array([[state.wn, state.we]]).T #
         S_inv = np.linalg.inv(self.R_pseudo + C @ self.P @ C.T)
-        if (y-h).T @ S_inv @ (y-h) < self.pseudo_threshold:
+        if True:#(y-h).T @ S_inv @ (y-h) < self.pseudo_threshold:
             L = self.P @ C.T @ S_inv
             tempvar = np.eye(7) - L @ C
             self.P = tempvar @ self.P @ tempvar.T + L @ self.R_pseudo @ L.T
