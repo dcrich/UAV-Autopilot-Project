@@ -10,7 +10,7 @@ from tools.wrap import wrap
 class PathFollower:
     def __init__(self):
         self.chi_inf = np.pi/5.0 #between 0 (parallel), pi (normal) # approach angle for large distance from straight-line path
-        self.k_path = .01 # <1 (smooth), >1 (abrupt)#0.05  # proportional gain for straight-line path following
+        self.k_path = .05 # <1 (smooth), >1 (abrupt)#0.05  # proportional gain for straight-line path following
         self.k_orbit = 10. # 10.0  # proportional gain for orbit following
         self.gravity = 9.8
         self.autopilot_commands = MsgAutopilot()  # message sent to autopilot

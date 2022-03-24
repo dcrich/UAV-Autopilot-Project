@@ -21,7 +21,7 @@ class Observer:
         self.estimated_state = initial_state
         # use alpha filters to low pass filter gyros and accels
         # alpha = Ts/(Ts + tau) where tau is the LPF time constant
-        self.lpf_gyro_x = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_x)
+        self.lpf_gyro_x = AlphaFilter(alpha=0.9, y0=initial_measurements.gyro_x)
         self.lpf_gyro_y = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_y)
         self.lpf_gyro_z = AlphaFilter(alpha=0.7, y0=initial_measurements.gyro_z)
         self.lpf_accel_x = AlphaFilter(alpha=0.7, y0=initial_measurements.accel_x)

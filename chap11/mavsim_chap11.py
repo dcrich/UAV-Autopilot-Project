@@ -6,7 +6,7 @@ mavsim_python
         2/27/2020 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import copy
 import parameters.simulation_parameters as SIM
@@ -43,14 +43,14 @@ path_manager = PathManager()
 # waypoint definition
 from message_types.msg_waypoints import MsgWaypoints
 waypoints = MsgWaypoints()
-waypoints.type = 'straight_line'
-#waypoints.type = 'fillet'
+# waypoints.type = 'straight_line'
+waypoints.type = 'fillet'
 #waypoints.type = 'dubins'
 Va = PLAN.Va0
-waypoints.add(np.array([[0, 0, -100]]).T, Va, np.radians(0), np.inf, 0, 0)
-waypoints.add(np.array([[1000, 0, -100]]).T, Va, np.radians(45), np.inf, 0, 0)
-waypoints.add(np.array([[0, 1000, -100]]).T, Va, np.radians(45), np.inf, 0, 0)
-waypoints.add(np.array([[1000, 1000, -100]]).T, Va, np.radians(-135), np.inf, 0, 0)
+waypoints.add(np.array([[0, 0, 0]]).T, Va, np.radians(0), np.inf, 0, 0)
+waypoints.add(np.array([[1000, 0, 0]]).T, Va, np.radians(45), np.inf, 0, 0)
+waypoints.add(np.array([[0, 1000, 0]]).T, Va, np.radians(45), np.inf, 0, 0)
+waypoints.add(np.array([[1000, 1000, 0]]).T, Va, np.radians(-135), np.inf, 0, 0)
 
 
 # initialize the simulation time

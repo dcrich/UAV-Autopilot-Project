@@ -32,7 +32,7 @@ class DrawPath:
         elif path.type == 'orbit':
             points = orbit_points(path)
         path_color = np.tile(color, (points.shape[0], 1))
-        self.path_plot_object.setData(pos=points, color=path_color)
+        self.path_plot_object.setData(pos=points, color=path_color, width=4)
 
 def straight_line_points(path, scale):
     points = np.array([[path.line_origin.item(0),

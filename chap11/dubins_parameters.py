@@ -66,40 +66,48 @@ class DubinsParameters:
 
 
 def compute_parameters(ps, chis, pe, chie, R):
-    ell = 
+    ell = np.norm(ps-pe)
     if ell < 2 * R:
         print('Error in Dubins Parameters: The distance between nodes must be larger than 2R.')
     else:
         # compute start and end circles
-        crs = 
-        cls = 
-        cre = 
-        cle = 
+        crs = ps + R * rotz(np.pi/2) @ np.array([[np.cos(chis)],[np.sin(chis)],[0.0]])
+        cls = ps + R * rotz(-np.pi/2) @ np.array([[np.cos(chis)],[np.sin(chis)],[0.0]])
+        cre = pe + R * rotz(np.pi/2) @ np.array([[np.cos(chie)],[np.sin(chie)],[0.0]])
+        cle = pe + R * rotz(-np.pi/2) @ np.array([[np.cos(chie)],[np.sin(chie)],[0.0]])
 
         # compute L1
-        
-        L1 = 
+        vartheta = np.arccos((cre.item(0)-crs.item(0))/np.norm(cre-crs))
+        L1 = np.norm(crs - cre) + R * mod(2.0*np.pi + mod(vartheta - np.pi/2.0) - mod(chis-np.pi/2.0))                  \
+                                + R * mod(2.0*np.pi + mod(chie - np.pi/2.0) - mod(vartheta-np.pi/2.0))
         # compute L2
 
-        ell = 
-        theta = 
-        theta2 = 
-        if not np.isreal(theta2):
-            L2 = 
+        ell = np.norm(cle-crs) 
+        vartheta = np.arccos((cle.item(0)-crs.item(0))/np.norm(cle-crs))
+        vartheta2 = vartheta - np.pi/2.0 + np.arcsin(2.0*R / ell)
+        if not np.isreal(vartheta2):
+            vartheta2 = vartheta
+            L2 = np.sqrt(ell**2 - 4.0* R**2) + R * mod(2.0* np.pi + mod(vartheta2) - mod(chis - np.pi/2.0))             \
+                                             + R * mod(2.0* np.pi + mod(vartheta2 +np.pi) - mod(chie + np.pi/2.0)) 
         else:
-            L2 = 
+            L2 = np.sqrt(ell**2 - 4.0* R**2) + R * mod(2.0* np.pi + mod(vartheta2) - mod(chis - np.pi/2.0))             \
+                                             + R * mod(2.0* np.pi + mod(vartheta2 +np.pi) - mod(chie + np.pi/2.0))  
 
         # compute L3
-        ell = 
-        theta = 
-        theta2 = 
-        if not np.isreal(theta2):
-
+        ell = np.norm(cre-cls) 
+        vartheta = np.arccos((cre.item(0)-cls.item(0))/np.norm(cre-cls))
+        vartheta2 = np.arccos(2.0*R / ell)
+        if not np.isreal(vartheta2):
+            vartheta2 = 0.0
+            L3 = np.sqrt(ell**2 - 4.0*R**2) + R * mod(2.0*np.pi + mod(chis+np.pi/2.0) - mod(vartheta+vartheta2))         \
+                                            + R * mod(2*np.pi + mod(chie - np.pi/2.0) - mod(vartheta + vartheta2 - np.pi))
         else:
-            L3 = 
+            L3 = np.sqrt(ell**2 - 4.0*R**2) + R * mod(2.0*np.pi + mod(chis+np.pi/2.0) - mod(vartheta+vartheta2))         \
+                                            + R * mod(2*np.pi + mod(chie - np.pi/2.0) - mod(vartheta + vartheta2 - np.pi))
         # compute L4
-        theta = 
-        L4 = 
+        theta = np.arccos((cle.item(0)-cls.item(0))/np.norm(cle-cls))
+        L4 = np.norm(cls-cle) + R * mod(2.0*np.pi + mod(chis+np.pi/2.0) - mod(vartheta + np.pi/2.0))                      \
+                              + R * mod(2.0*np.pi + mod(vartheta + np.pi/2.0) - mod(chie+np.pi/2.0)) 
         # L is the minimum distance
         L = np.min([L1, L2, L3, L4])
         idx = np.argmin([L1, L2, L3, L4])
