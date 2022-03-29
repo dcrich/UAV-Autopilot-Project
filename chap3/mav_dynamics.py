@@ -67,7 +67,8 @@ class MavDynamics:
         self._state[7][0] = self._state.item(7)/normE
         self._state[8][0] = self._state.item(8)/normE
         self._state[9][0] = self._state.item(9)/normE
-
+        print('state')
+        print(self._state)
         # update the message class for the true state
         self._update_true_state()
 
@@ -142,6 +143,8 @@ class MavDynamics:
         # collect the derivative of the states
         x_dot = np.array([[north_dot, east_dot, down_dot, u_dot, v_dot, w_dot,
                            e0_dot, e1_dot, e2_dot, e3_dot, p_dot, q_dot, r_dot]]).T
+        print('xdot')
+        print(x_dot)
         return x_dot
 
     def _update_true_state(self):

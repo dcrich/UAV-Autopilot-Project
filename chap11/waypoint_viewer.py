@@ -21,11 +21,11 @@ class WaypointViewer:
         self.app = pg.QtGui.QApplication([])  # initialize QT
         self.window = gl.GLViewWidget()  # initialize the view object
         self.window.setWindowTitle('World Viewer')
-        self.window.setGeometry(0, 0, 400, 1500)  # args: upper_left_x, upper_right_y, width, height
+        self.window.setGeometry(0, 0, 410, 1500)  # args: upper_left_x, upper_right_y, width, height
         grid = gl.GLGridItem() # make a grid to represent the ground
         grid.scale(self.scale/20, self.scale/20, self.scale/20) # set the size of the grid (distance between each line)
         self.window.addItem(grid) # add grid to viewer
-        self.window.setCameraPosition(pos=pg.Vector(500,500,1000), elevation=90, azimuth=-90)
+        self.window.setCameraPosition(pos=pg.Vector(600,650,1300), elevation=90, azimuth=-90)
         self.window.setBackgroundColor('k')  # set background color to black
         self.window.show()  # display configured window
         self.window.raise_()  # bring window to the front

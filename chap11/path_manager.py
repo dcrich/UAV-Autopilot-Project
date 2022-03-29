@@ -1,3 +1,4 @@
+from cv2 import RHO
 import numpy as np
 import sys
 sys.path.append('..')
@@ -106,7 +107,6 @@ class PathManager:
             self.initialize_pointers()
             self.manager_state == 1
         # state machine for fillet path
-
         if self.manager_state == 1:
             self.path.type = 'line'
             self.construct_fillet_line(waypoints,radius)
@@ -172,16 +172,73 @@ class PathManager:
 
     def dubins_manager(self, waypoints, radius, state):
         mav_pos = np.array([[state.north, state.east, -state.altitude]]).T
+        previous = waypoints.ned[:, self.ptr_previous:self.ptr_previous+1] 
+        current = waypoints.ned[:, self.ptr_current:self.ptr_current+1]
+        chip = waypoints.course[self.ptr_previous] 
+        chic = waypoints.course[self.ptr_current] 
         # if the waypoints have changed, update the waypoint pointer
-
+        if waypoints.flag_waypoints_changed is True:
+            self.num_waypoints = waypoints.num_waypoints
+            self.initialize_pointers()
+            self.manager_state == 1
+            self.dubins_path.update(previous, chip, current, chic, radius)
+        waypoints.flag_waypoints_changed = False
         # state machine for dubins path
+        if self.manager_state == 1:
+            self.path.type = 'orbit'
+            self.path.orbit_center = self.dubins_path.center_s
+            self.path.orbit_radius = radius
+            self.path.orbit_direction = self.dubins_path.dir_s
+            self.halfspace_n = -self.dubins_path.n1
+            self.halfspace_r = self.dubins_path.r1
+            if self.inHalfSpace(mav_pos):
+                self.manager_state = 2
+                self.path.plot_updated = False
+        elif self.manager_state == 2:
+            self.halfspace_n = self.dubins_path.n1
+            self.halfspace_r = self.dubins_path.r1
+            if self.inHalfSpace(mav_pos):
+                self.manager_state = 3
+        elif self.manager_state == 3:
+            self.path.type = 'line'
+            self.path.line_origin = self.dubins_path.r1
+            self.path.line_direction = self.dubins_path.n1
+            self.halfspace_n = self.dubins_path.n1
+            self.halfspace_r = self.dubins_path.r2
+            if self.inHalfSpace(mav_pos):
+                self.manager_state = 4
+                self.path.plot_updated = False
+        elif self.manager_state == 4:
+            self.path.type = 'orbit'
+            self.path.orbit_center = self.dubins_path.center_e
+            self.path.orbit_radius = radius
+            self.path.orbit_direction = self.dubins_path.dir_e
+            self.halfspace_n = -self.dubins_path.n3
+            self.halfspace_r = self.dubins_path.r3
+            if self.inHalfSpace(mav_pos):
+                self.manager_state = 5
+                self.path.plot_updated = False
+        elif self.manager_state == 5:
+            self.halfspace_n = self.dubins_path.n3
+            self.halfspace_r = self.dubins_path.r3
+            if self.inHalfSpace(mav_pos):
+                self.manager_state = 1
+                self.increment_pointers()
+                previous = waypoints.ned[:, self.ptr_previous:self.ptr_previous+1] 
+                current = waypoints.ned[:, self.ptr_current:self.ptr_current+1]
+                chip = waypoints.course[self.ptr_previous] 
+                chic = waypoints.course[self.ptr_current] 
+                self.dubins_path.update(previous, chip, current, chic, radius)
+        self.path.plot_updated = False
 
-    def construct_dubins_circle_start(self, waypoints, dubins_path):
-        #update path variables
 
-    def construct_dubins_line(self, waypoints, dubins_path):
-        #update path variables
 
-    def construct_dubins_circle_end(self, waypoints, dubins_path):
-        #update path variables
+    # def construct_dubins_circle_start(self, waypoints, dubins_path):
+    #     #update path variables
+
+    # def construct_dubins_line(self, waypoints, dubins_path):
+    #     #update path variables
+
+    # def construct_dubins_circle_end(self, waypoints, dubins_path):
+    #     #update path variables
 
