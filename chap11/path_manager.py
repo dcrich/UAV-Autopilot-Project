@@ -50,7 +50,7 @@ class PathManager:
         self.ptr_previous = self.ptr_current
         self.ptr_current = self.ptr_next
         if self.ptr_next == self.num_waypoints-1:
-            self.ptr_next = 0
+            self.ptr_next = self.ptr_next#0
         else:
             self.ptr_next = self.ptr_next+1
 
@@ -106,6 +106,7 @@ class PathManager:
             self.num_waypoints = waypoints.num_waypoints
             self.initialize_pointers()
             self.manager_state == 1
+            waypoints.flag_waypoints_changed = False
         # state machine for fillet path
         if self.manager_state == 1:
             self.path.type = 'line'
@@ -169,6 +170,9 @@ class PathManager:
         self.path.orbit_center = current - (radius / np.sin(vartheta/2.0)) * tempvar2
         self.path.orbit_radius = radius
         self.path.orbit_direction = np.sign(q_im1.item(0) * q_i.item(1) - q_im1.item(1) * q_i.item(0))
+        # if abs(vartheta) > np.pi/2.0:
+        #     self.increment_pointers()
+        #     self.manager_state == 1
 
     def dubins_manager(self, waypoints, radius, state):
         mav_pos = np.array([[state.north, state.east, -state.altitude]]).T
@@ -242,3 +246,60 @@ class PathManager:
     # def construct_dubins_circle_end(self, waypoints, dubins_path):
     #     #update path variables
 
+
+# # Beard's Dubins manager (not sure if indented properly):
+def beard_dubins_manager(self, waypoints, radius, state):
+    mav_pos = np.array([[state.north, state.east, -state.altitude]]).T
+    close_distance = 1
+    # if the waypoints have changed, update the waypoint pointer
+    if waypoints.flag_waypoints_changed is True:
+        waypoints.flag_waypoints_changed = False
+        self.num_waypoints = waypoints.num_waypoints
+        self.initialize_pointers()
+        # dubins path parameters
+        self.dubins_path.update(ps=waypoints.ned[:, self.ptr_previous:self.ptr_previous+1],
+                                chis=waypoints.course.item(self.ptr_previous),
+                                pe=waypoints.ned[:, self.ptr_current:self.ptr_current+1],
+                                chie=waypoints.course.item(self.ptr_current),
+                                R=radius)
+        self.construct_dubins_circle_start(waypoints, self.dubins_path)
+        if self.inHalfSpace(mav_pos):
+            self.manager_state = 1
+        else:
+            self.manager_state = 2
+    # state machine for dubins path
+    if self.manager_state == 1:
+        if ((not self.inHalfSpace(mav_pos)) # follow start orbit until out of H1
+           or (np.linalg.norm(self.dubins_path.p_s - self.dubins_path.r1)<close_distance)): # skip the first circle if distance along circle is small
+            self.manager_state=2
+    elif self.manager_state == 2:
+        if (self.inHalfSpace(mav_pos) # follow start orbit until cross into H1
+           or (np.linalg.norm(self.dubins_path.p_s - self.dubins_path.r1)<close_distance)): # skip the first circle if distance along circle is smal
+            self.construct_dubins_line(waypoints, self.dubins_path)
+            self.manager_state = 3
+    elif self.manager_state == 3:
+        if (self.inHalfSpace(mav_pos) # follow start orbit until cross into H2
+        or (np.linalg.norm(self.dubins_path.r1 - self.dubins_path.r2) < close_distance)): # skip line if it is short
+            self.construct_dubins_circle_end(waypoints, self.dubins_path)
+            if self.inHalfSpace(mav_pos):
+                self.manager_state = 4
+            else:
+                 self.manager_state = 5
+    elif self.manager_state == 4:
+        if ((not self.inHalfSpace(mav_pos) ) # follow start orbit until out of H3
+        or (np.linalg.norm(self.dubins_path.r2 - self.dubins_path.p_e) < close_distance)): # skip circle if small
+            self.manager_state = 5
+    elif self.manager_state == 5:
+        if (self.inHalfSpace(mav_pos) # follow start orbit until cross into H3
+        or (np.linalg.norm(self.dubins_path.r2 - self.dubins_path.p_e) < close_distance)): # skip circle if small
+            self.increment_pointers()
+            self.dubins_path.update(waypoints.ned[:, self.ptr_previous:self.ptr_previous+1],
+                                    waypoints.course.item(self.ptr_previous),
+                                    waypoints.ned[:, self.ptr_current:self.ptr_current+1],
+                                    waypoints.course.item(self.ptr_current),
+                                    radius)
+            self.construct_dubins_circle_start(waypoints, self.dubins_path)
+            self.manager_state = 1
+    # requests new waypoints when reach end of current list
+        if self.ptr_current == 0:
+            self.manager_requests_waypoints = True

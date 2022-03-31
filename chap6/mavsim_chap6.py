@@ -129,25 +129,25 @@ while sim_time < SIM.end_time:
         commands.airspeed_command = 20.0
         commands.course_command = 0.0
         commands.altitude_command = 10.0
-    elif sim_time > 15 and sim_time < 20: # check course
-        commands.airspeed_command = 20.0
-        commands.course_command = 0.0
-        commands.altitude_command = 10.0
-    elif sim_time > 20 and sim_time < 25: # check course
+    # elif sim_time > 15 and sim_time < 20: # check course
+    #     commands.airspeed_command = 20.0
+    #     commands.course_command = 0.0
+    #     commands.altitude_command = 10.0
+    # elif sim_time > 20 and sim_time < 25: # check course
+    #     commands.airspeed_command = 35.0
+    #     commands.course_command = 0.0
+    #     commands.altitude_command = 10.0
+    # elif sim_time > 25 and sim_time < 30: # check course
+    #     commands.airspeed_command = 25.0
+    #     commands.course_command = 0.0
+    #     commands.altitude_command = 10.0
+    # elif sim_time > 30 and sim_time < 50: # check course
+    #     commands.airspeed_command = 35.0
+    #     commands.course_command = 0.0
+    #     commands.altitude_command = 10.0
+    elif sim_time > 15 and sim_time < 60: # check speed
         commands.airspeed_command = 35.0
-        commands.course_command = 0.0
-        commands.altitude_command = 10.0
-    elif sim_time > 25 and sim_time < 30: # check course
-        commands.airspeed_command = 25.0
-        commands.course_command = 0.0
-        commands.altitude_command = 10.0
-    elif sim_time > 30 and sim_time < 50: # check course
-        commands.airspeed_command = 35.0
-        commands.course_command = 0.0
-        commands.altitude_command = 10.0
-    elif sim_time > 50 and sim_time < 60: # check speed
-        commands.airspeed_command = 35.0
-        commands.course_command = np.pi
+        commands.course_command =  -np.pi/2
         commands.altitude_command = 100.0
     elif sim_time > 60 and sim_time < 75: # check course and 180 degree behavior
         commands.airspeed_command = 35.0

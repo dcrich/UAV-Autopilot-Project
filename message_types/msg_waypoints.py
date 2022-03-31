@@ -23,8 +23,8 @@ class MsgWaypoints:
         #   - straight line following
         #   - fillets between straight lines
         #   - follow dubins paths
-        self.type = 'straight_line'
-        # self.type = 'fillet'
+        # self.type = 'straight_line'
+        self.type = 'fillet'
         # self.type = 'dubins'
         # current number of valid waypoints in memory
         self.num_waypoints = 0

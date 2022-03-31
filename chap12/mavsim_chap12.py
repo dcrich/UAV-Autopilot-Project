@@ -6,7 +6,7 @@ mavsim_python
         2/27/2020 - RWB
 """
 import sys
-sys.path.append('..')
+sys.path.append('/Users/danada/Coding/Flight Controls EE 674/mavsim_python')
 import numpy as np
 import copy
 import parameters.simulation_parameters as SIM
@@ -97,4 +97,13 @@ if VIDEO is True:
 
 
 
+"""
+LEFT OFF
+- path planner kind of works, turn back on obstacles and keep testing
+- code path smoother
 
+BACK BURNER:
+- Can't turn right as well as it can left
+- handling of running out of waypoints
+    - need to add signal to request for more waypoints
+"""

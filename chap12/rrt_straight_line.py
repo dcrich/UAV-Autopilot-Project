@@ -21,22 +21,68 @@ class RRTStraightLine:
         self.plot_app = []
 
     def update(self, start_pose, end_pose, Va, world_map, radius):
+        endReachedFlag = False
         #generate tree
         tree = MsgWaypoints()
-        #tree.type = 'straight_line'
+        # tree.type = 'straight_line'
         tree.type = 'fillet'
         # add the start pose to the tree
-        
+        unitDirection = (end_pose - start_pose)/np.linalg.norm(end_pose - start_pose)
+        course = np.arctan2(unitDirection.item(1), unitDirection.item(0))
+        tree.add(start_pose, Va, course, 0, -1, 0)
         # check to see if start_pose connects directly to end_pose
-       
+        distanceToEnd = distance(start_pose,end_pose)
+        if distanceToEnd <= self.segment_length:
+                # create leaf for end_pose
+                cost = distanceToEnd        
+                tree.add(end_pose, Va, course, distanceToEnd, 0, 1)
+                endReachedFlag = True
+        while not endReachedFlag:#end node not connected to graph
+            endReachedFlag = self.extend_tree(tree, end_pose, Va, world_map)
         # find path with minimum cost to end_node
-        waypoints_not_smooth = #find_minimum_path()
-        waypoints = #smooth_path()
+        waypoints = find_minimum_path(tree, end_pose)
+        # waypoints = smooth_path(waypoints_not_smooth, world_map)
         return waypoints
 
     def extend_tree(self, tree, end_pose, Va, world_map):
         # extend tree by randomly selecting pose and extending tree toward that pose
-        flag = 
+        p = random_pose(world_map,end_pose[2])
+        vstarIndex = find_closest_configuration(p, tree) #find closest point in 'tree' to 'p'
+        vstar = tree.ned[:,vstarIndex].reshape(3,1)
+        unitDirection = (p-vstar)/np.linalg.norm(p-vstar)
+        vplus = vstar + self.segment_length * unitDirection #plan_path(vstar, p, self.segment_length) # find point length 'D' from 'vstar' toward 'p'
+        # vplus[2] = end_pose.item(2)
+        # check if path from 'vstar' to 'vplus' is valid,
+        # collided = collision(vstar, vplus, unitDirection, world_map)
+        collided = False
+        if not collided:
+            # calculate orientation
+            course = np.arctan2(unitDirection.item(1), unitDirection.item(0))
+            # update cost
+            cost = self.segment_length + tree.cost[vstarIndex] 
+            distanceToEnd = distance(vplus,end_pose)
+            if distanceToEnd <= self.segment_length:
+                # add vplus, cost,  as leaf to 'tree'
+                connectToGoal = 0
+                tree.add(vplus, Va, course, cost, vstarIndex, connectToGoal)
+                # create leaf for end_pose
+                treelength = np.size(tree.ned,0)
+                cost = cost + distanceToEnd
+                connectToGoal = 1
+                unitDirection = (end_pose - vplus)/np.linalg.norm(end_pose - vstar)
+                course = np.arctan2(unitDirection.item(1), unitDirection.item(0))
+                tree.add(end_pose, Va, course, cost, treelength-1, connectToGoal)
+            else:
+                connectToGoal = 0
+                # add vplus, cost,  as leaf to 'tree'
+                tree.add(vplus, Va, course, cost, vstarIndex, connectToGoal) 
+        else:
+            connectToGoal = 0
+            
+        if connectToGoal: #check if new node connected to end node
+            flag = True
+        else:
+            flag = False
         return flag
 
     def plot_map(self, world_map, tree, waypoints, smoothed_waypoints, radius):
@@ -78,45 +124,154 @@ def smooth_path(waypoints, world_map):
 def find_minimum_path(tree, end_pose):
     # find the lowest cost path to the end node
     # find nodes that connect to end_node
-    connecting_nodes = []
-   
+    connecting_nodes = np.argwhere(tree.connect_to_goal == 1)
+    connecting_node_costs = tree.cost[connecting_nodes]
     # find minimum cost last node
-    idx = 
-
+    idx = np.argmin(connecting_node_costs)
+    bestNode = connecting_nodes[idx]
     # construct lowest cost path order
-    path = 
-    
+    creatingpath = True
+    path = np.array([int(bestNode)])
+    currentNode = bestNode
+    while creatingpath:
+        parentNode = tree.parent[int(currentNode.item(0))]
+        if parentNode == -1:
+            creatingpath = False
+        else:
+            path = np.append(path, int(parentNode))
+            currentNode = parentNode
+    path = np.flip(path)
+
     # construct waypoint path
     waypoints = MsgWaypoints()
+    for p in path:
+        waypoints.add(ned=tree.ned[:,p].reshape(3,1), airspeed=tree.airspeed[p],
+            course=tree.course[p], cost=tree.cost[p], parent=tree.parent[p], connect_to_goal=tree.connect_to_goal[p])
    
     return waypoints
 
 
 def random_pose(world_map, pd):
     # generate a random pose
-    pose =
+    pose = np.random.uniform(0.0,1.5*world_map.city_width,3).reshape((3,1))
+    pose[2] = pd
     return pose
 
 
 def distance(start_pose, end_pose):
     # compute distance between start and end pose
-    d = 
+    d = np.linalg.norm(end_pose-start_pose)
     return d
 
 
-def collision(start_pose, end_pose, world_map):
+def collision(start_pose, end_pose, unitVector, world_map):
+    safetyMargin = -2000
+    numberofPoints = 30
+    collision_flag = False
     # check to see of path from start_pose to end_pose colliding with map
-    collision_flag = 
-
+    pathPoints = points_along_path(start_pose,end_pose,numberofPoints)
+    # for point in pathPoints:
+        # create bounding box around path, with error margin
+        # orientation = np.arctan2(unitDirection.item(1), unitDirection.item(0))
+        # unitVectorPerpendicularToPath = [[np.cos(np.pi/2.0),-np.sin(np.pi/2.0)],[np.sin(np.pi/2.0),np.cos(np.pi/2.0)]] @ unitDirection
+        # marginVector = 0.5 * safetyMargin * unitVectorPerpendicularToPath
+        # if orientation <= np.pi/2.0 or orientation >= -np.pi/2.0:
+        #     boundSN = start_pose - safetyMargin * unitDirection + marginVector
+        #     boundSS = start_pose - safetyMargin * unitDirection  - marginVector
+        #     boundEN = end_pose  + safetyMargin * unitDirection + marginVector
+        #     boundES = end_pose  + safetyMargin * unitDirection - marginVector
+        # else:
+        #     boundSN = start_pose + safetyMargin * unitDirection + marginVector
+        #     boundSS = start_pose + safetyMargin * unitDirection  - marginVector
+        #     boundEN = end_pose - safetyMargin * unitDirection + marginVector
+        #     boundES = end_pose - safetyMargin * unitDirection - marginVector
+        # # partition world to narrow search field
+        # np.argwhere(world_map.building_north <= max(boundSN,boundEN) and world_map.building_north >= min(boundSS,boundES) and world_map.building_east <= boundSN and world_map.building_north >= boundEN )
+   
+    
+    # see if any buildings within a bounding box
+    startN = start_pose.item(0)
+    startE = start_pose.item(1)
+    endN = end_pose.item(0)
+    endE = end_pose.item(1)
+    bN = world_map.building_north_east[:,0]
+    bE = world_map.building_north_east[:,0]
+    if startN >= endN and startE < endE: # start\end
+        nearbuildingsN = np.argwhere((bN < startN + (safetyMargin + world_map.building_width*0.5)) &
+                                     (bN > endN - (safetyMargin + world_map.building_width*0.5)))
+        nearbuildingsE = np.argwhere((bE > startE - (safetyMargin + world_map.building_width*0.5)) &
+                                     (bE < startE + (safetyMargin + world_map.building_width*0.5)))
+        nearbuildings = np.argwhere(nearbuildingsN==nearbuildingsE)
+    elif startN >= endN and startE >= endE: # end/start
+        nearbuildingsN = np.argwhere((bN < startN + (safetyMargin + world_map.building_width*0.5)) &
+                                     (bN > endN - (safetyMargin + world_map.building_width*0.5)))
+        nearbuildingsE = np.argwhere((bE < startE + (safetyMargin + world_map.building_width*0.5)) &
+                                     (bE > startE - (safetyMargin + world_map.building_width*0.5)))
+        nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+    elif startN < endN and startE < endE: # start/end
+        nearbuildingsN = np.argwhere((bN > startN - (safetyMargin + world_map.building_width*0.5)) &
+                                    (bN < endN + (safetyMargin + world_map.building_width*0.5)))          
+        nearbuildingsE = np.argwhere((bE < startE + safetyMargin + world_map.building_width*0.5) &
+                                     (bE > startE - safetyMargin + world_map.building_width*0.5))
+        nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+    elif startN < endN and startE >= endE: # end\start
+        nearbuildingsN = np.argwhere((bN > startN - (safetyMargin + world_map.building_width*0.5)) &
+                                    (bN < endN + (safetyMargin + world_map.building_width*0.5)))
+        nearbuildingsE = np.argwhere((bE > startE - (safetyMargin + world_map.building_width*0.5))  &
+                                    (bE < startE + (safetyMargin + world_map.building_width*0.5)))
+        nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+    else:
+        raise Exception("Missed a case, revisit conditional logic")
+    
+    if np.any(nearbuildings): # check if any buildings were found in bounding box
+        for point in pathPoints: # check each point
+            pn = point.item(0)
+            pe = point.item(1)
+            for bn_beInd in nearbuildings: # check each building in bounding box
+                bn_be = world_map.building_north_east[bn_beInd]
+                bn = bn_be.item(0)
+                be = bn_be.item(1)
+                bd = height_above_ground(world_map, bn_beInd) # check building height
+                if bd >= start_pose.item(2)-safetyMargin: # if building needs to be avoided, check if collision possible
+                    # check if point is within the footprint of the building+ a safety margin
+                    checkN = pn <= bn + (safetyMargin + world_map.building_width*0.5) 
+                    checkS = pn >= bn - (safetyMargin + world_map.building_width*0.5)
+                    checkE = pe <= be + (safetyMargin + world_map.building_width*0.5)
+                    checkW = pe >= be - (safetyMargin + world_map.building_width*0.5)
+                    if checkN and checkS and checkE and checkW: # if within footprint, flag collision
+                        collision_flag = True
+                if collision_flag:
+                    break
+            if collision_flag:
+                break
+    else: # if no buildings in bounding box, continue without collisions
+        collision_flag = False
+    # world_map.city_width
+    # world_map.num_city_blocks
+    # world_map.building_north
+    # world_map.building_east
+    # find buildings in the search field
+    # check if bounding box above all buildings
+    # check distance from each building
+    # if collided:
+    #     collision_flag = True
+    # else:
+    #     collision_flag = False
     return collision_flag
 
 
-def height_above_ground(world_map, point):
+def height_above_ground(world_map, pointInd):
     # find the altitude of point above ground level
-    point_height = 
-    map_height = 
-    h_agl = 
+    h_agl = world_map.building_height[pointInd.item(0),pointInd.item(1)]
     return h_agl
+
+
+def points_along_path(start_pose, end_pose, N):
+    # returns points along path separated by Del
+    pointsN = np.linspace(start_pose.item(0),end_pose.item(0),N)
+    pointsE = np.linspace(start_pose.item(1),end_pose.item(1),N)
+    points = np.array([pointsN,pointsE]).T
+    return points
 
 
 def draw_tree(tree, color, window):
@@ -134,14 +289,17 @@ def draw_tree(tree, color, window):
         window.addItem(line)
 
 
-def points_along_path(start_pose, end_pose, N):
-    # returns points along path separated by Del
-    points = 
-    return points
-
-
 def column(A, i):
     # extracts the ith column of A and return column vector
     tmp = A[:, i]
     col = tmp.reshape(A.shape[0], 1)
     return col
+
+def find_closest_configuration(p,tree):
+    distanceTracker = np.array([])
+    for i in range(np.size(tree.ned,1)):
+        leaf = tree.ned[:,i]
+        d = distance(leaf,p)
+        distanceTracker = np.append(distanceTracker,[d])
+    closestLeafIndex = np.argmin(distanceTracker)
+    return closestLeafIndex

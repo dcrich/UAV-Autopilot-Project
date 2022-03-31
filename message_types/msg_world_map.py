@@ -33,3 +33,9 @@ class MsgWorldMap:
             self.building_north[0, i] = 0.5 * (PLAN.city_width / PLAN.num_blocks) * (2 * i + 1)
         # east coordinate of center of buildings
         self.building_east = np.copy(self.building_north)
+        self.building_north_east = np.zeros((PLAN.num_blocks**2,2))
+        counter = 0
+        for i in range(PLAN.num_blocks):
+            for j in range(PLAN.num_blocks):
+                self.building_north_east[counter,:] = np.array([self.building_north[0,i],self.building_east[0,j]])
+                counter+=1
