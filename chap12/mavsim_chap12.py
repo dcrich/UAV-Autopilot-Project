@@ -99,10 +99,10 @@ if VIDEO is True:
 
 """
 LEFT OFF
-- path planner kind of works, turn back on obstacles and keep testing
 - code path smoother
 
 BACK BURNER:
+- path manager sucks
 - Can't turn right as well as it can left
 - handling of running out of waypoints
     - need to add signal to request for more waypoints

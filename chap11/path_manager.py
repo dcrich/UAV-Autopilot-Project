@@ -51,6 +51,7 @@ class PathManager:
         self.ptr_current = self.ptr_next
         if self.ptr_next == self.num_waypoints-1:
             self.ptr_next = self.ptr_next#0
+            # self.manager_requests_waypoints = True
         else:
             self.ptr_next = self.ptr_next+1
 

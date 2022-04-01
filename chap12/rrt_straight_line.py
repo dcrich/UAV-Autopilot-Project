@@ -39,9 +39,12 @@ class RRTStraightLine:
                 endReachedFlag = True
         while not endReachedFlag:#end node not connected to graph
             endReachedFlag = self.extend_tree(tree, end_pose, Va, world_map)
+            if np.size(tree.parent,0) > 1500:
+                endReachedFlag == True
         # find path with minimum cost to end_node
         waypoints = find_minimum_path(tree, end_pose)
         # waypoints = smooth_path(waypoints_not_smooth, world_map)
+        self.plot_map(world_map, tree, waypoints, waypoints, radius)
         return waypoints
 
     def extend_tree(self, tree, end_pose, Va, world_map):
@@ -53,29 +56,27 @@ class RRTStraightLine:
         vplus = vstar + self.segment_length * unitDirection #plan_path(vstar, p, self.segment_length) # find point length 'D' from 'vstar' toward 'p'
         # vplus[2] = end_pose.item(2)
         # check if path from 'vstar' to 'vplus' is valid,
-        # collided = collision(vstar, vplus, unitDirection, world_map)
-        collided = False
+        collided = collision(vstar, vplus, world_map)
+        # collided = False
         if not collided:
             # calculate orientation
             course = np.arctan2(unitDirection.item(1), unitDirection.item(0))
             # update cost
             cost = self.segment_length + tree.cost[vstarIndex] 
             distanceToEnd = distance(vplus,end_pose)
+            connectToGoal = 0
+            # add vplus as leaf to 'tree'
+            tree.add(vplus, Va, course, cost, vstarIndex, connectToGoal) 
             if distanceToEnd <= self.segment_length:
-                # add vplus, cost,  as leaf to 'tree'
-                connectToGoal = 0
-                tree.add(vplus, Va, course, cost, vstarIndex, connectToGoal)
-                # create leaf for end_pose
-                treelength = np.size(tree.ned,0)
-                cost = cost + distanceToEnd
-                connectToGoal = 1
-                unitDirection = (end_pose - vplus)/np.linalg.norm(end_pose - vstar)
-                course = np.arctan2(unitDirection.item(1), unitDirection.item(0))
-                tree.add(end_pose, Va, course, cost, treelength-1, connectToGoal)
-            else:
-                connectToGoal = 0
-                # add vplus, cost,  as leaf to 'tree'
-                tree.add(vplus, Va, course, cost, vstarIndex, connectToGoal) 
+                collided = collision(vplus, end_pose, world_map)
+                if not collided:
+                    # create leaf for end_pose
+                    treelength = np.size(tree.ned,1)
+                    cost = cost + distanceToEnd
+                    connectToGoal = 1
+                    unitDirection = (end_pose - vplus)/np.linalg.norm(end_pose - vstar)
+                    course = np.arctan2(unitDirection.item(1), unitDirection.item(0))
+                    tree.add(end_pose, Va, course, cost, treelength-1, connectToGoal)                
         else:
             connectToGoal = 0
             
@@ -126,13 +127,17 @@ def find_minimum_path(tree, end_pose):
     # find nodes that connect to end_node
     connecting_nodes = np.argwhere(tree.connect_to_goal == 1)
     connecting_node_costs = tree.cost[connecting_nodes]
-    # find minimum cost last node
-    idx = np.argmin(connecting_node_costs)
-    bestNode = connecting_nodes[idx]
-    # construct lowest cost path order
+    # removed bc only finding one path
+    # # find minimum cost last node
+    # idx = np.argmin(connecting_node_costs)
+    # bestNode = connecting_nodes[idx]
+    # # construct lowest cost path order
+    # creatingpath = True
+    # path = np.array([int(bestNode)])
+    # currentNode = bestNode
     creatingpath = True
-    path = np.array([int(bestNode)])
-    currentNode = bestNode
+    currentNode = connecting_nodes
+    path = np.array([int(currentNode)])
     while creatingpath:
         parentNode = tree.parent[int(currentNode.item(0))]
         if parentNode == -1:
@@ -164,9 +169,9 @@ def distance(start_pose, end_pose):
     return d
 
 
-def collision(start_pose, end_pose, unitVector, world_map):
-    safetyMargin = -2000
-    numberofPoints = 30
+def collision(start_pose, end_pose, world_map):
+    safetyMargin = 70 # needs to be less than 100
+    numberofPoints = 600
     collision_flag = False
     # check to see of path from start_pose to end_pose colliding with map
     pathPoints = points_along_path(start_pose,end_pose,numberofPoints)
@@ -196,49 +201,109 @@ def collision(start_pose, end_pose, unitVector, world_map):
     endE = end_pose.item(1)
     bN = world_map.building_north_east[:,0]
     bE = world_map.building_north_east[:,0]
-    if startN >= endN and startE < endE: # start\end
-        nearbuildingsN = np.argwhere((bN < startN + (safetyMargin + world_map.building_width*0.5)) &
-                                     (bN > endN - (safetyMargin + world_map.building_width*0.5)))
-        nearbuildingsE = np.argwhere((bE > startE - (safetyMargin + world_map.building_width*0.5)) &
-                                     (bE < startE + (safetyMargin + world_map.building_width*0.5)))
-        nearbuildings = np.argwhere(nearbuildingsN==nearbuildingsE)
+    bNE = world_map.building_north_east.copy()
+    # if startN >= endN and startE < endE: # start\end
+    #     NE = np.array([startN + (safetyMargin + world_map.building_width*0.5),endE + (safetyMargin + world_map.building_width*0.5)]) #<
+    #     SW = np.array([endN - (safetyMargin + world_map.building_width*0.5),startE - (safetyMargin + world_map.building_width*0.5)]) #>
+    #     temp1 = bNE<NE
+    #     temp2 = bNE>SW
+    #     nearbuildings = np.argwhere((bNE<NE) & (bNE>SW))
+    #     # nearbuildingsN = np.argwhere((bN < startN + (safetyMargin + world_map.building_width*0.5)) &
+    #     #                              (bN > endN - (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildingsE = np.argwhere((bE > startE - (safetyMargin + world_map.building_width*0.5)) &
+    #     #                              (bE < startE + (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildings = np.argwhere(nearbuildingsN==nearbuildingsE)
+    # elif startN >= endN and startE >= endE: # end/start
+    #     NE = np.array([startN + (safetyMargin + world_map.building_width*0.5) , startE + (safetyMargin + world_map.building_width*0.5)]) #<
+    #     SW = np.array([endN - (safetyMargin + world_map.building_width*0.5) , endE - (safetyMargin + world_map.building_width*0.5)]) #>
+    #     temp1 = bNE<NE
+    #     temp2 = bNE>SW
+    #     nearbuildings = np.argwhere((bNE<NE) & (bNE>SW))
+    #     # nearbuildingsN = np.argwhere((bN < startN + (safetyMargin + world_map.building_width*0.5)) &
+    #     #                              (bN > endN - (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildingsE = np.argwhere((bE < startE + (safetyMargin + world_map.building_width*0.5)) &
+    #     #                              (bE > startE - (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+    # elif startN < endN and startE < endE: # start/end
+    #     NE = np.array([endN + (safetyMargin + world_map.building_width*0.5) , startE + (safetyMargin + world_map.building_width*0.5)]) #<
+    #     SW = np.array([startN - (safetyMargin + world_map.building_width*0.5) , endE - (safetyMargin + world_map.building_width*0.5)]) #>
+    #     temp1 = bNE<NE
+    #     temp2 = bNE>SW
+    #     nearbuildings = np.argwhere((bNE<NE) & (bNE>SW))
+    #     # nearbuildingsN = np.argwhere((bN > startN - (safetyMargin + world_map.building_width*0.5)) &
+    #     #                             (bN < endN + (safetyMargin + world_map.building_width*0.5)))          
+    #     # nearbuildingsE = np.argwhere((bE < startE + safetyMargin + world_map.building_width*0.5) &
+    #     #                              (bE > startE - (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+    # elif startN < endN and startE >= endE: # end\start
+    #     NE = np.array([endN + (safetyMargin + world_map.building_width*0.5) , endE + (safetyMargin + world_map.building_width*0.5)]) #<
+    #     SW = np.array([startN - (safetyMargin + world_map.building_width*0.5) , startE - (safetyMargin + world_map.building_width*0.5)]) #>
+    #     temp1 = bNE<NE
+    #     temp2 = bNE>SW
+    #     nearbuildings = np.argwhere((bNE<NE) & (bNE>SW))
+    #     # nearbuildingsN = np.argwhere((bN > startN - (safetyMargin + world_map.building_width*0.5)) &
+    #     #                             (bN < endN + (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildingsE = np.argwhere((bE > startE - (safetyMargin + world_map.building_width*0.5))  &
+    #     #                             (bE < startE + (safetyMargin + world_map.building_width*0.5)))
+    #     # nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+    # else:
+    #     raise Exception("Missed a case, revisit conditional logic")
+    bufferLength = safetyMargin + world_map.building_width*0.5
+    if startN < endN and startE < endE: # start/end
+        NE = np.array([endN + (bufferLength) , endE + (bufferLength)]) #<
+        SW = np.array([startN - (bufferLength) , startE - (bufferLength)]) #>
+        temp1 = bNE<NE
+        temp2 = bNE>SW
+        temp3 = np.concatenate((temp1, temp2),axis=1)
+        temp33 = np.all(temp3,axis=1)
+        nearbuildings = np.argwhere(temp33)
+    elif startN >= endN and startE < endE: # start\end
+        NE = np.array([startN + (bufferLength), endE + (bufferLength)]) #<
+        SW = np.array([endN - (bufferLength), startE - (bufferLength)]) #>
+        temp1 = bNE<NE
+        temp2 = bNE>SW
+        temp3 = np.concatenate((temp1, temp2),axis=1)
+        temp33 = np.all(temp3,axis=1)
+        nearbuildings = np.argwhere(temp33)
     elif startN >= endN and startE >= endE: # end/start
-        nearbuildingsN = np.argwhere((bN < startN + (safetyMargin + world_map.building_width*0.5)) &
-                                     (bN > endN - (safetyMargin + world_map.building_width*0.5)))
-        nearbuildingsE = np.argwhere((bE < startE + (safetyMargin + world_map.building_width*0.5)) &
-                                     (bE > startE - (safetyMargin + world_map.building_width*0.5)))
-        nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
-    elif startN < endN and startE < endE: # start/end
-        nearbuildingsN = np.argwhere((bN > startN - (safetyMargin + world_map.building_width*0.5)) &
-                                    (bN < endN + (safetyMargin + world_map.building_width*0.5)))          
-        nearbuildingsE = np.argwhere((bE < startE + safetyMargin + world_map.building_width*0.5) &
-                                     (bE > startE - safetyMargin + world_map.building_width*0.5))
-        nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+        NE = np.array([startN + (bufferLength) , startE + (bufferLength)]) #<
+        SW = np.array([endN - (bufferLength) , endE - (bufferLength)]) #>
+        temp1 = bNE<NE
+        temp2 = bNE>SW
+        temp3 = np.concatenate((temp1, temp2),axis=1)
+        temp33 = np.all(temp3,axis=1)
+        nearbuildings = np.argwhere(temp33)
     elif startN < endN and startE >= endE: # end\start
-        nearbuildingsN = np.argwhere((bN > startN - (safetyMargin + world_map.building_width*0.5)) &
-                                    (bN < endN + (safetyMargin + world_map.building_width*0.5)))
-        nearbuildingsE = np.argwhere((bE > startE - (safetyMargin + world_map.building_width*0.5))  &
-                                    (bE < startE + (safetyMargin + world_map.building_width*0.5)))
-        nearbuildings = np.argwhere(nearbuildingsN == nearbuildingsE)
+        NE = np.array([endN + (bufferLength) , startE + (bufferLength)]) #<
+        SW = np.array([startN - (bufferLength) , endE - (bufferLength)]) #>
+        temp1 = bNE<NE
+        temp2 = bNE>SW
+        temp3 = np.concatenate((temp1, temp2),axis=1)
+        temp33 = np.all(temp3,axis=1)
+        nearbuildings = np.argwhere(temp33)
     else:
         raise Exception("Missed a case, revisit conditional logic")
-    
+    heightmap = world_map.building_height.flatten()
     if np.any(nearbuildings): # check if any buildings were found in bounding box
         for point in pathPoints: # check each point
+            point =point.reshape(1,2)
             pn = point.item(0)
             pe = point.item(1)
             for bn_beInd in nearbuildings: # check each building in bounding box
-                bn_be = world_map.building_north_east[bn_beInd]
+                bn_be = world_map.building_north_east[bn_beInd,:]
                 bn = bn_be.item(0)
                 be = bn_be.item(1)
-                bd = height_above_ground(world_map, bn_beInd) # check building height
-                if bd >= start_pose.item(2)-safetyMargin: # if building needs to be avoided, check if collision possible
+                bd = height_above_ground(heightmap, bn_beInd) # check building height
+                if True:#bd >= start_pose.item(2)-safetyMargin: # if building needs to be avoided, check if collision possible
                     # check if point is within the footprint of the building+ a safety margin
-                    checkN = pn <= bn + (safetyMargin + world_map.building_width*0.5) 
-                    checkS = pn >= bn - (safetyMargin + world_map.building_width*0.5)
-                    checkE = pe <= be + (safetyMargin + world_map.building_width*0.5)
-                    checkW = pe >= be - (safetyMargin + world_map.building_width*0.5)
-                    if checkN and checkS and checkE and checkW: # if within footprint, flag collision
+                    # checkN = pn <= (bn + (bufferLength))
+                    # checkS = pn >= (bn - (bufferLength))
+                    # checkE = pe <= (be + (bufferLength))
+                    # checkW = pe >= (be - (bufferLength))
+                    checkNE = point <= (bn_be + bufferLength)
+                    checkSW = point >= (bn_be - bufferLength)
+                    if np.all(checkNE) and np.all(checkSW):
+                    # if checkN and checkS and checkE and checkW: # if within footprint, flag collision
                         collision_flag = True
                 if collision_flag:
                     break
@@ -262,7 +327,7 @@ def collision(start_pose, end_pose, unitVector, world_map):
 
 def height_above_ground(world_map, pointInd):
     # find the altitude of point above ground level
-    h_agl = world_map.building_height[pointInd.item(0),pointInd.item(1)]
+    h_agl = world_map[pointInd.item(0)]
     return h_agl
 
 

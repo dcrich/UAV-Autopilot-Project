@@ -22,9 +22,9 @@ class PathPlanner:
     def update(self, world_map, state, radius):
         print('planning...')
         # this flag is set for one time step to signal a redraw in the viewer
-        planner_flag = 'simple_straight'  # return simple waypoint path
+        # planner_flag = 'simple_straight'  # return simple waypoint path
         # planner_flag = 'simple_dubins'  # return simple dubins waypoint path
-        # planner_flag = 'rrt_straight'  # plan path through city using straight-line RRT
+        planner_flag = 'rrt_straight'  # plan path through city using straight-line RRT
         #planner_flag = 'rrt_dubins'  # plan path through city using dubins RRT
         if planner_flag == 'simple_straight':
             Va = 25
@@ -44,7 +44,7 @@ class PathPlanner:
 
         elif planner_flag == 'rrt_straight':
             desired_airspeed = 25
-            desired_altitude = 0
+            desired_altitude = 1
             # start pose is current pose
             start_pose = np.array([[state.north], [state.east], [-desired_altitude]])
             # desired end pose
