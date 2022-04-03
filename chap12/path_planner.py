@@ -30,9 +30,9 @@ class PathPlanner:
             Va = 25
             self.waypoints.type = 'fillet'
             self.waypoints.add(np.array([[0, 0, -0]]).T, Va, np.inf, np.inf, 0, 0)
-            self.waypoints.add(np.array([[1000, 0, -0]]).T, Va, np.inf, np.inf, 0, 0)
-            self.waypoints.add(np.array([[1000, -1000, -0]]).T, Va, np.inf, np.inf, 0, 0)
-            self.waypoints.add(np.array([[0, -1000, -0]]).T, Va, np.inf, np.inf, 0, 0)
+            self.waypoints.add(np.array([[1000, 0, -100]]).T, Va, np.inf, np.inf, 0, 0)
+            self.waypoints.add(np.array([[1000, -1000, -100]]).T, Va, np.inf, np.inf, 0, 0)
+            self.waypoints.add(np.array([[0, -1000, -100]]).T, Va, np.inf, np.inf, 0, 0)
 
         elif planner_flag == 'simple_dubins':
             Va = 25
@@ -44,7 +44,7 @@ class PathPlanner:
 
         elif planner_flag == 'rrt_straight':
             desired_airspeed = 25
-            desired_altitude = 1
+            desired_altitude = 0
             # start pose is current pose
             start_pose = np.array([[state.north], [state.east], [-desired_altitude]])
             # desired end pose
@@ -58,7 +58,7 @@ class PathPlanner:
 
         elif planner_flag == 'rrt_dubins':
             desired_airspeed = 25
-            desired_altitude = 100
+            desired_altitude = 0.0
             # start pose is current pose
             start_pose = np.array([[state.north], [state.east],
                                    [-desired_altitude], [state.chi]])

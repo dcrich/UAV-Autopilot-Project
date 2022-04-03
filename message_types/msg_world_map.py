@@ -24,7 +24,7 @@ class MsgWorldMap:
         # maximum height of buildings
         self.building_max_height = PLAN.building_height
         # an array of building heights
-        self.building_height = PLAN.building_height * np.random.rand(PLAN.num_blocks, PLAN.num_blocks)
+        self.building_height = PLAN.building_height * np.random.rand(PLAN.num_blocks, PLAN.num_blocks) 
         # the width of the buildings (all the same)
         self.building_width = PLAN.city_width / PLAN.num_blocks * (1 - PLAN.street_width)
         # north coordinate of center of buildings
