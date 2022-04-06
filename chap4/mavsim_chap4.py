@@ -46,15 +46,15 @@ while sim_time < SIM.end_time:
     # delta.rudder =   -0.0003026
     # delta.throttle =  0.6768
     # Me
-    # delta.elevator = -0.1248
-    # delta.aileron =   0.001836
-    # delta.rudder =   -0.0002026
-    # delta.throttle =  0.6768
-
-    delta.elevator = -0.1248 * 5
-    delta.aileron =   0.01836
+    delta.elevator = -0.1248
+    delta.aileron =   0.001836
     delta.rudder =   -0.0002026
-    delta.throttle =  0.9
+    delta.throttle =  0.6768
+
+    # delta.elevator = -0.1248 * 5
+    # delta.aileron =   0.0001836
+    # delta.rudder =   -0.0002026
+    # delta.throttle =  0.9
 
     # -------physical system-------------
     current_wind = wind.update()  # get the new wind vector

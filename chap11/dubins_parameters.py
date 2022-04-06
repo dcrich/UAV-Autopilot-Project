@@ -69,6 +69,16 @@ def compute_parameters(ps, chis, pe, chie, R):
     ell = np.linalg.norm(ps-pe)
     if ell < 2 * R:
         print('Error in Dubins Parameters: The distance between nodes must be larger than 2R.')
+        L = ell
+        cs = ps
+        lams = 1
+        ce = pe
+        lame = 1
+        w1 = ps
+        q1 = chis
+        w2 =  pe
+        w3 =  pe
+        q3 = chie
     else:
         # compute start and end circles
         crs = R * rotz(np.pi/2) @ np.array([[np.cos(chis)],[np.sin(chis)],[0.0]]) + ps
@@ -83,11 +93,10 @@ def compute_parameters(ps, chis, pe, chie, R):
         L1 = np.linalg.norm(crs - cre) + R * mod(2.0*np.pi + mod(vartheta - np.pi/2.0) - mod(chis-np.pi/2.0))                  \
                                 + R * mod(2.0*np.pi + mod(chie - np.pi/2.0) - mod(vartheta-np.pi/2.0))
         # compute L2
-
         ell = np.linalg.norm(cle-crs) 
         vartheta = np.arctan2(cle.item(1)-crs.item(1), cle.item(0)-crs.item(0))#np.arccos((cle.item(0)-crs.item(0))/np.linalg.norm(cle-crs))
         vartheta2 = vartheta - np.pi/2.0 + np.arcsin(2.0*R / ell)
-        if not np.isreal(vartheta2):
+        if np.isnan(vartheta2):
             vartheta2 = vartheta
             L2 = np.sqrt(ell**2 - 4.0* R**2) + R * mod(2.0* np.pi + mod(vartheta2) - mod(chis - np.pi/2.0))             \
                                              + R * mod(2.0* np.pi + mod(vartheta2 +np.pi) - mod(chie + np.pi/2.0)) 
@@ -99,7 +108,7 @@ def compute_parameters(ps, chis, pe, chie, R):
         ell = np.linalg.norm(cre-cls) 
         vartheta = np.arctan2(cre.item(1)-cls.item(1), cre.item(0)-cls.item(0))#np.arccos((cre.item(0)-cls.item(0))/np.linalg.norm(cre-cls))
         vartheta2 = np.arccos(2.0*R / ell)
-        if not np.isreal(vartheta2):
+        if np.isnan(vartheta2):
             vartheta2 = 0.0
             L3 = np.sqrt(ell**2 - 4.0*R**2) + R * mod(2.0*np.pi + mod(chis+np.pi/2.0) - mod(vartheta+vartheta2))         \
                                             + R * mod(2*np.pi + mod(chie - np.pi/2.0) - mod(vartheta + vartheta2 - np.pi))
@@ -129,7 +138,10 @@ def compute_parameters(ps, chis, pe, chie, R):
             lame = -1
             ell = np.linalg.norm(ce-cs)
             vartheta = np.arctan2(ce.item(1)-cs.item(1), ce.item(0)-cs.item(0))#np.arccos((ce.item(0)-cs.item(0))/ell)
-            vartheta2 = vartheta - np.pi/2.0 + np.arcsin(2.0*R / ell)
+            tempvar = np.arcsin(2.0*R / ell)
+            vartheta2 = vartheta - np.pi/2.0 + tempvar
+            if np.isnan(vartheta2):
+                vartheta2 = vartheta
             q1 = rotz(vartheta2 +np.pi/2.0)@e1
             w1 = cs + R * rotz(vartheta2)@e1
             w2 =  ce + R * rotz(vartheta2 + np.pi)@e1
@@ -141,6 +153,8 @@ def compute_parameters(ps, chis, pe, chie, R):
             ell = np.linalg.norm(ce-cs)
             vartheta = np.arctan2(ce.item(1)-cs.item(1), ce.item(0)-cs.item(0))#np.arccos((ce.item(0)-cs.item(0))/ell)
             vartheta2 = np.arccos(2*R/ell)
+            if np.isnan(vartheta2):
+                vartheta2 = 0.0
             q1 = rotz(vartheta + vartheta2 - np.pi/2.0) @ e1
             w1 = cs + R * rotz(vartheta + vartheta2) @ e1
             w2 = ce + R * rotz(vartheta + vartheta2 - np.pi) @ e1
@@ -155,7 +169,7 @@ def compute_parameters(ps, chis, pe, chie, R):
         w3 = pe
         q3 = rotz(chie) @ e1
 
-        return L, cs, lams, ce, lame, w1, q1, w2, w3, q3
+    return L, cs, lams, ce, lame, w1, q1, w2, w3, q3
 
 
 def rotz(theta):

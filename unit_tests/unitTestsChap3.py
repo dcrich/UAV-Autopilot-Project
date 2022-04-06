@@ -4,9 +4,7 @@ Checks the response to each force and moment when negative, positive, and zero
 
 Run in terminal using commands:
 'cd <file directory>'   e.g.-> 'cd /Users/danada/Coding/Flight Controls EE 674/mavsim_python'
-'pytest -q unit_test.py'
-OR For detailed output:
-'pytest -v -rN --tb=no --no-header'
+'pytest -q unit_tests/unitTestsChap4.py'
 """
 
 import sys
@@ -15,8 +13,9 @@ import numpy as np
 import parameters.simulation_parameters as SIM
 
 from chap3.mav_dynamics import MavDynamics
-from message_types.msg_delta import MsgDelta
 import unit_tests.chap3_truth as trueValues
+# import chap3_truth as trueValues
+
 
 # check fx
 def test_derivative_fx():
@@ -25,13 +24,14 @@ def test_derivative_fx():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[0,0] = 10.0 # set fx
     # get derivative results
     xdotA = mav._derivatives(mav._state, forces_moments)  # propagate the MAV dynamics
     #compare against true values
+    test = np.allclose(xdotA, trueValues.x_dot_fx)
     assert np.allclose(xdotA, trueValues.x_dot_fx)
 
 def test_update_fx():
@@ -40,7 +40,7 @@ def test_update_fx():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[0,0] = 10.0 #set fx
@@ -57,7 +57,7 @@ def test_derivative_fy():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[1,0] = 10.0 # set fy
@@ -72,7 +72,7 @@ def test_update_fy():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[1,0] = 10.0 #set fy
@@ -89,7 +89,7 @@ def test_derivative_fz():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[2,0] = 10.0 # set fz
@@ -104,7 +104,7 @@ def test_update_fz():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[2,0] = 10.0 #set fz
@@ -120,7 +120,7 @@ def test_derivative_Mx():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[3,0] = 0.1 # set Mx
@@ -135,7 +135,7 @@ def test_update_Mx():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[3,0] = 0.1 #set Mx
@@ -152,7 +152,7 @@ def test_derivative_My():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[4,0] = 0.1 # set My
@@ -167,7 +167,7 @@ def test_update_My():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[4,0] = 0.1 #set My
@@ -183,7 +183,7 @@ def test_derivative_Mz():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[5,0] = 0.1 # set Mz
@@ -198,7 +198,7 @@ def test_update_Mz():
     # set state
     mav._state = np.zeros((13,1),dtype=float)
     mav._state[3,0] = 25.0 # set u0
-    mav._state[3,0] = 1.0 # set e0
+    mav._state[6,0] = 1.0 # set e0
     # set forces and moments
     forces_moments = np.zeros((6,1),dtype=float) # fx, fy, fz, Mx, My, Mz
     forces_moments[5,0] = 0.1 #set Mz
@@ -207,3 +207,15 @@ def test_update_Mz():
     #compare against true values
     assert np.allclose(mav._state, trueValues.state_Mz)
 
+# test_derivative_fx()
+# test_update_fx()
+# test_derivative_fy()
+# test_update_fy()
+# test_derivative_fz()
+# test_update_fz()
+# test_derivative_Mx()
+# test_update_Mx()
+# test_derivative_My()
+# test_update_My()
+# test_derivative_Mz()
+# test_update_Mz()

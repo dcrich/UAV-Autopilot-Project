@@ -6,7 +6,6 @@
 #         4/3/2019 - Brady Moon
 #         4/11/2019 - RWB
 #         3/31/2020 - RWB
-from tokenize import endpats
 import numpy as np
 from message_types.msg_waypoints import MsgWaypoints
 from chap11.draw_waypoints import DrawWaypoints
@@ -215,29 +214,10 @@ def distance(start_pose, end_pose):
 
 def collision(start_pose, end_pose, world_map):
     safetyMargin = 70 # needs to be less than 100
-    numberofPoints = int(np.linalg.norm(end_pose-start_pose) * 2)
+    numberofPoints = int(np.linalg.norm(end_pose-start_pose) * 3)
     collision_flag = False
     # check to see of path from start_pose to end_pose colliding with map
     pathPoints = points_along_path(start_pose,end_pose,numberofPoints)
-    # for point in pathPoints:
-        # create bounding box around path, with error margin
-        # orientation = np.arctan2(unitDirection.item(1), unitDirection.item(0))
-        # unitVectorPerpendicularToPath = [[np.cos(np.pi/2.0),-np.sin(np.pi/2.0)],[np.sin(np.pi/2.0),np.cos(np.pi/2.0)]] @ unitDirection
-        # marginVector = 0.5 * safetyMargin * unitVectorPerpendicularToPath
-        # if orientation <= np.pi/2.0 or orientation >= -np.pi/2.0:
-        #     boundSN = start_pose - safetyMargin * unitDirection + marginVector
-        #     boundSS = start_pose - safetyMargin * unitDirection  - marginVector
-        #     boundEN = end_pose  + safetyMargin * unitDirection + marginVector
-        #     boundES = end_pose  + safetyMargin * unitDirection - marginVector
-        # else:
-        #     boundSN = start_pose + safetyMargin * unitDirection + marginVector
-        #     boundSS = start_pose + safetyMargin * unitDirection  - marginVector
-        #     boundEN = end_pose - safetyMargin * unitDirection + marginVector
-        #     boundES = end_pose - safetyMargin * unitDirection - marginVector
-        # # partition world to narrow search field
-        # np.argwhere(world_map.building_north <= max(boundSN,boundEN) and world_map.building_north >= min(boundSS,boundES) and world_map.building_east <= boundSN and world_map.building_north >= boundEN )
-   
-    
     # see if any buildings within a bounding box
     startN = start_pose.item(0)
     startE = start_pose.item(1)
@@ -282,7 +262,7 @@ def collision(start_pose, end_pose, world_map):
     else:
         raise Exception("Missed a case, revisit conditional logic")
     heightmap = world_map.building_height.flatten()
-    if np.any(nearbuildings): # check if any buildings were found in bounding box
+    if nearbuildings.size > 0: # check if any buildings were found in bounding box
         for point in pathPoints: # check each point
             point =point.reshape(1,2)
             pn = point.item(0)
