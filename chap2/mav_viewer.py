@@ -26,7 +26,7 @@ class MavViewer():
         grid.scale(100, 100, 100) # set the size of the grid (distance between each line)
         self.window.addItem(grid) # add grid to viewer
         self.window.setCameraPosition(distance=200) # distance from center of plot to camera
-        self.window.setBackgroundColor('k')  # set background color to black
+        self.window.setBackgroundColor('w')  # set background color to black
         self.window.show()  # display configured window
         self.window.raise_() # bring window to the front
         self.plot_initialized = False # has the mav been plotted yet?
